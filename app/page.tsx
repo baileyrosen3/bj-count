@@ -17,6 +17,8 @@ import { RefreshCw, Plus, Minus } from "lucide-react";
 import { ValueButton } from "@/components/ValueButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SetupScreen } from "@/components/SetupScreen";
+import CardDetector from "../components/CardDetector";
+import { DetectedCard } from "@/types/cards";
 
 export default function Home() {
   const [isGameStarted, setIsGameStarted] = useState(false);
@@ -70,9 +72,22 @@ export default function Home() {
     setRunningCount((prev) => prev + value);
   };
 
+  const handleDetectedCards = (cards: DetectedCard[]) => {
+    cards.forEach(({ card, position }) => {
+      // Determine if the card is a dealer card based on position
+      const isDealerCard = position.y < window.innerHeight / 2;
+
+      if (isDealerCard) {
+        handleDealerCardSelect(card);
+      } else {
+        handleCardClick(card);
+      }
+    });
+  };
+
   if (!isGameStarted || !deckState) {
     return (
-      <main className="min-h-screen bg-background flex flex-col items-center justify-center dark">
+      <main className="min-h-screen bg-background/95 flex flex-col items-center justify-center dark">
         <SetupScreen onStart={handleGameStart} />
       </main>
     );
@@ -86,9 +101,10 @@ export default function Home() {
   const bettingUnits = getBettingUnits(trueCount);
 
   return (
-    <main className="min-h-screen bg-background p-4 flex flex-col items-center dark">
+    <main className="flex min-h-screen flex-col items-center justify-between p-24 dark bg-background/95">
+      <CardDetector onCardsDetected={handleDetectedCards} />
       <div className="flex flex-col w-full max-w-md space-y-4">
-        <div className="flex items-center justify-between bg-card/50 p-4 rounded-xl backdrop-blur-sm border border-border/50">
+        <div className="flex items-center justify-between bg-card/30 p-4 rounded-xl backdrop-blur-sm border border-border/30">
           <div>
             <span className="text-lg font-medium text-foreground">
               True Count: {trueCount}
@@ -98,9 +114,9 @@ export default function Home() {
             variant="outline"
             size="icon"
             onClick={handleReset}
-            className="h-8 w-8 border-border/50 bg-zinc-800/50 hover:bg-zinc-700/50"
+            className="h-8 w-8 border-border/30 bg-background/50 hover:bg-background/70"
           >
-            <RefreshCw className="h-4 w-4 text-white" />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
 

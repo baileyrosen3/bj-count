@@ -129,7 +129,7 @@ export function StrategyChart({
     return total.split(",") as Card[];
   };
   return (
-    <UICard className="w-full border-border/50 bg-card/50 backdrop-blur-sm">
+    <UICard className="w-full border-border/30 bg-card/30 backdrop-blur-sm">
       <CardContent className="p-4 space-y-4">
         <div className="space-y-2">
           <div className="text-sm font-medium text-muted-foreground">
@@ -141,12 +141,12 @@ export function StrategyChart({
                 key={card}
                 variant="outline"
                 className={cn(
-                  "h-12 text-lg font-medium border-border/50",
-                  dealerCard === card && "border-primary bg-primary/15",
+                  "h-12 text-lg font-medium border-border/30",
+                  dealerCard === card && "border-primary bg-primary/20",
                   ["2", "3", "4", "5", "6"].includes(card) &&
-                    "bg-blue-400/15 hover:bg-blue-400/25",
+                    "bg-blue-500/10 hover:bg-blue-500/20",
                   ["10", "A", "J", "Q", "K"].includes(card) &&
-                    "bg-red-400/15 hover:bg-red-400/25",
+                    "bg-red-500/10 hover:bg-red-500/20",
                   deckState[card] === 0 && "opacity-50"
                 )}
                 onClick={() => handleDealerCardSelect(card)}
@@ -164,7 +164,7 @@ export function StrategyChart({
           onValueChange={(value: "hard" | "soft" | "pair") =>
             value && setHandType(value)
           }
-          className="justify-stretch bg-background/50 p-1 rounded-lg"
+          className="justify-stretch bg-background/20 p-1 rounded-lg"
         >
           <ToggleGroupItem value="hard" className="flex-1">
             Hard
@@ -182,7 +182,7 @@ export function StrategyChart({
             <Button
               key={total}
               variant="outline"
-              className="h-10 justify-between border-border/50 bg-background/50"
+              className="h-10 justify-between border-border/30 bg-background/20"
             >
               <span>{total}</span>
               {dealerCard && (
