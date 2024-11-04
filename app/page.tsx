@@ -30,9 +30,17 @@ export default function Home() {
   const [selectedDealerCard, setSelectedDealerCard] = useState<CardType | null>(
     null
   );
+  const [bankroll, setBankroll] = useState<number>(0);
+  const [unitSize, setUnitSize] = useState<number>(0);
 
-  const handleGameStart = (decks: number) => {
+  const handleGameStart = (
+    decks: number,
+    initialBankroll: number,
+    initialUnitSize: number
+  ) => {
     setNumberOfDecks(decks);
+    setBankroll(initialBankroll);
+    setUnitSize(initialUnitSize);
     setDeckState(initialDeckState(decks));
     setIsGameStarted(true);
   };
@@ -42,6 +50,8 @@ export default function Home() {
     setDeckState(null);
     setRunningCount(0);
     setSelectedDealerCard(null);
+    setBankroll(0);
+    setUnitSize(0);
   };
 
   const handleCardClick = (card: CardType) => {
@@ -139,7 +149,9 @@ export default function Home() {
           </TabsList>
           <TabsContent value="strategy">
             <div className="text-sm font-medium text-muted-foreground mt-4 mb-4 ml-2">
-              Recommended Betting Units: {bettingUnits}
+              <div>Bankroll: ${bankroll}</div>
+              <div>Unit Size: ${unitSize}</div>
+              <div>Recommended Bet: ${bettingUnits * unitSize}</div>
             </div>
             <StrategyChart
               dealerCard={selectedDealerCard}
