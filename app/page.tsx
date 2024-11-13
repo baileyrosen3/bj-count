@@ -21,6 +21,7 @@ import { SetupScreen } from "@/components/SetupScreen";
 import { BankrollStats } from "@/components/BankrollStats";
 import { BettingControls } from "@/components/BettingControls";
 import { CountingSystem } from "@/lib/types";
+import { BlackjackTable } from "@/components/BlackjackTable";
 
 interface GameStats {
   handsPlayed: number;
@@ -54,6 +55,9 @@ export default function Home() {
     biggestLoss: 0,
     peakBankroll: 0,
   });
+  const [gamePhase, setGamePhase] = useState<"setup" | "playing" | "complete">(
+    "setup"
+  );
 
   const handleGameStart = (
     decks: number,
@@ -167,7 +171,7 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-5 gap-1.5">
+        {/* <div className="grid grid-cols-5 gap-1.5">
           {CARDS.map((card) => (
             <ValueButton
               key={card}
@@ -177,7 +181,7 @@ export default function Home() {
               disabled={deckState[card] === 0}
             />
           ))}
-        </div>
+        </div> */}
 
         <Tabs defaultValue="strategy" className="w-full">
           <TabsList className="grid w-full grid-cols-2 p-1">
@@ -193,19 +197,20 @@ export default function Home() {
               <div className="text-base font-medium text-foreground px-1">
                 Recommended Betting Units: {bettingUnits}
               </div>
-              <BettingControls
+              {/* <BettingControls
                 bankroll={bankroll}
                 minBet={minBet}
                 onHandResult={handleHandResult}
-              />
-              <StrategyChart
+              /> */}
+              {/* <StrategyChart
                 dealerCard={selectedDealerCard}
                 onDealerCardSelect={handleDealerCardSelect}
                 onCountUpdate={handleCountUpdate}
                 deckState={deckState}
                 runningCount={runningCount}
                 countingSystem={countingSystem}
-              />
+                onHandResult={handleHandResult}
+              /> */}
             </div>
           </TabsContent>
           <TabsContent value="stats" className="mt-6">
@@ -219,6 +224,25 @@ export default function Home() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {gamePhase === "setup" && (
+          <BlackjackTable
+            deckState={deckState}
+            onCardSelect={(card) => {
+              setDeckState((prev) => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  [card]: prev[card] - 1,
+                };
+              });
+            }}
+            onComplete={(playerHands, dealerHand) => {
+              // Handle completed setup
+              setGamePhase("playing");
+            }}
+          />
+        )}
       </div>
     </main>
   );
