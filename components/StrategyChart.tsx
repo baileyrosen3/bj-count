@@ -18,6 +18,7 @@ import { Card as UICard, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { CountingSystem } from "@/lib/types";
 
 interface StrategyChartProps {
   dealerCard: Card | null;
@@ -25,6 +26,7 @@ interface StrategyChartProps {
   onCountUpdate: (value: number) => void;
   deckState: Record<Card, number>;
   runningCount: number;
+  countingSystem: CountingSystem;
 }
 
 export function StrategyChart({
@@ -33,6 +35,7 @@ export function StrategyChart({
   onCountUpdate,
   deckState,
   runningCount,
+  countingSystem,
 }: StrategyChartProps) {
   const [handType, setHandType] = useState<"hard" | "soft" | "pair">("hard");
   const dealerCards: Card[] = [

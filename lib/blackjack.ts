@@ -1,3 +1,24 @@
+import { COUNTING_SYSTEM_VALUES, COUNTING_SYSTEMS, CountingSystem } from "./types";
+
+// Add a variable to hold the current counting system
+let currentCountingSystem: CountingSystem = "Hi-Lo";
+
+// Function to set the current counting system
+export const setCurrentCountingSystem = (system: CountingSystem) => {
+  currentCountingSystem = system;
+};
+
+export const getCardValue = (card: Card): number => {
+  const systemInfo = COUNTING_SYSTEMS.find(
+    (sys) => sys.name === currentCountingSystem
+  );
+  if (!systemInfo) {
+    // Fallback to Hi-Lo if system not found
+    return COUNTING_SYSTEM_VALUES["Hi-Lo"][card] || 0;
+  }
+  return systemInfo.cardValues[card] || 0;
+};
+
 export type Card =
   | "2"
   | "3"
@@ -60,12 +81,6 @@ export const CARDS: Card[] = [
   "A",
 ];
 
-export const getCardValue = (card: Card): number => {
-  if (["2", "3", "4", "5", "6"].includes(card)) return 1;
-  if (["7", "8", "9"].includes(card)) return 0;
-  return -1; // 10, J, Q, K, A
-};
-
 export const getCardCategory = (card: Card): "low" | "neutral" | "high" => {
   if (["2", "3", "4", "5", "6"].includes(card)) return "low";
   if (["7", "8", "9"].includes(card)) return "neutral";
@@ -77,6 +92,13 @@ export const calculateTrueCount = (
   remainingDecks: number
 ): number => {
   if (remainingDecks === 0) return 0;
+  const systemInfo = COUNTING_SYSTEMS.find(
+    (sys) => sys.name === currentCountingSystem
+  );
+  if (!systemInfo || !isBalancedSystem(currentCountingSystem)) {
+    // For unbalanced systems like KO, true count may not be used
+    return runningCount;
+  }
   return Math.round((runningCount / remainingDecks) * 10) / 10;
 };
 
@@ -677,4 +699,9 @@ export const getBettingUnits = (trueCount: number): number => {
   if (trueCount < 4) return 4;
   if (trueCount < 5) return 8;
   return 8; // For +5 and up
+};
+
+export const isBalancedSystem = (system: CountingSystem): boolean => {
+  const balancedSystems = ["Hi-Lo", "Hi-Opt I", "Hi-Opt II", "Omega II", "Zen Count"];
+  return balancedSystems.includes(system);
 };
