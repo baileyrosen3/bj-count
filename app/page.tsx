@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { DeckStatistics } from "@/components/DeckStatistics";
 import { StrategyChart } from "@/components/StrategyChart";
 import { RefreshCw, Plus, Minus } from "lucide-react";
-import { ValueButton } from "@/components/ValueButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SetupScreen } from "@/components/SetupScreen";
 import { BankrollStats } from "@/components/BankrollStats";
