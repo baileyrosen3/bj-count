@@ -24,11 +24,6 @@ interface PlayingHand {
   isComplete: boolean;
 }
 
-interface DealerHand {
-  cards: Card[];
-  hiddenCard: Card | null;
-}
-
 interface PlayingTableProps {
   initialHands: PlayingHand[];
   dealerUpCard: Card;
@@ -39,6 +34,34 @@ interface PlayingTableProps {
   runningCount: number;
   countingSystem: CountingSystem;
   onRunningCountChange: (count: number) => void;
+}
+
+// Add this interface for round stats
+interface RoundStats {
+  dealerTotal: number;
+  dealerCards: Card[];
+  playerHands: {
+    cards: Card[];
+    total: number;
+    bet: number;
+    result: "win" | "lose" | "push";
+    isYourHand: boolean;
+  }[];
+}
+
+// Add new interface for table statistics
+interface TableStats {
+  totalHands: number;
+  handsWon: number;
+  handsLost: number;
+  handsPushed: number;
+  totalBetsWon: number;
+  totalBetsLost: number;
+  biggestWin: number;
+  biggestLoss: number;
+  currentStreak: number;
+  longestWinStreak: number;
+  longestLoseStreak: number;
 }
 
 export function PlayingTable({
@@ -53,63 +76,53 @@ export function PlayingTable({
   onRunningCountChange,
 }: PlayingTableProps) {
   const [hands, setHands] = useState<PlayingHand[]>(initialHands);
-  const [dealerHand, setDealerHand] = useState<DealerHand>({
+  const [dealerHand, setDealerHand] = useState<{ cards: Card[] }>({
     cards: [dealerUpCard],
-    hiddenCard: null,
   });
   const [activeHandIndex, setActiveHandIndex] = useState<number>(0);
   const [showActions, setShowActions] = useState(true);
   const [showDealerPlay, setShowDealerPlay] = useState(false);
   const [isSelectingCard, setIsSelectingCard] = useState(false);
-  const [currentRunningCount, setCurrentRunningCount] = useState(runningCount);
-  const [gameComplete, setGameComplete] = useState(false);
-  const [handResults, setHandResults] = useState<
-    Record<number, "win" | "lose" | "push">
-  >({});
-
-  // Calculate true count whenever the running count or deck state changes
-  const trueCount = calculateTrueCount(
-    currentRunningCount,
-    calculateRemainingDecks(deckState)
-  );
+  const [isRoundComplete, setIsRoundComplete] = useState(false);
+  const [roundStats, setRoundStats] = useState<RoundStats | null>(null);
+  const [tableStats, setTableStats] = useState<TableStats>({
+    totalHands: 0,
+    handsWon: 0,
+    handsLost: 0,
+    handsPushed: 0,
+    totalBetsWon: 0,
+    totalBetsLost: 0,
+    biggestWin: 0,
+    biggestLoss: 0,
+    currentStreak: 0,
+    longestWinStreak: 0,
+    longestLoseStreak: 0,
+  });
 
   const getCardColor = (card: Card) => {
     if (["2", "3", "4", "5", "6"].includes(card)) {
-      return "bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-200/50 dark:bg-blue-400/25 dark:hover:bg-blue-400/35 dark:text-blue-200";
+      return "bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-200/50";
     }
     if (["10", "J", "Q", "K", "A"].includes(card)) {
-      return "bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-200/50 dark:bg-red-400/25 dark:hover:bg-red-400/35 dark:text-red-200";
+      return "bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-200/50";
     }
-    return "bg-zinc-500/20 hover:bg-zinc-500/30 text-zinc-200 border-zinc-200/50 dark:bg-zinc-400/25 dark:hover:bg-zinc-400/35 dark:text-zinc-200";
+    return "bg-zinc-500/20 hover:bg-zinc-500/30 text-zinc-200 border-zinc-200/50";
   };
 
-  const canSplit = (hand: PlayingHand) => {
-    console.log("Split Check:", {
-      hand,
-      cardLength: hand.cards.length,
-      cardsMatch: hand.cards[0] === hand.cards[1],
-      notDoubled: !hand.isDoubled,
-      notSplit: !hand.isSplit,
-    });
-
-    // Check for face cards (10, J, Q, K should be splittable)
-    const isSameValue = (card1: Card, card2: Card) => {
-      const faceCards = ["10", "J", "Q", "K"];
-      if (faceCards.includes(card1) && faceCards.includes(card2)) return true;
-      return card1 === card2;
-    };
-
-    return (
-      hand.cards.length === 2 &&
-      isSameValue(hand.cards[0], hand.cards[1]) &&
-      !hand.isDoubled &&
-      !hand.isSplit &&
-      // Add check for available deck cards
-      deckState[hand.cards[0]] > 0
+  const moveToNextHand = () => {
+    const nextIncompleteIndex = hands.findIndex(
+      (hand, idx) => idx > activeHandIndex && !hand.isComplete
     );
+
+    if (nextIncompleteIndex !== -1) {
+      setActiveHandIndex(nextIncompleteIndex);
+      setShowActions(true);
+    } else {
+      setShowDealerPlay(true);
+    }
   };
 
-  const handleAction = async (action: "hit" | "stand" | "double" | "split") => {
+  const handleAction = (action: "hit" | "stand" | "double" | "split") => {
     const currentHand = hands[activeHandIndex];
     if (!currentHand) return;
 
@@ -127,6 +140,7 @@ export function PlayingTable({
       case "hit":
         // Set state to show card selection UI
         setIsSelectingCard(true);
+        setShowActions(false);
         break;
 
       case "double":
@@ -139,15 +153,18 @@ export function PlayingTable({
                 : hand
             )
           );
-          setShowActions(false); // Show card selection for final card
+          setIsSelectingCard(true);
+          setShowActions(false);
         }
         break;
 
       case "split":
         if (canSplit(currentHand)) {
-          console.log("Splitting hand:", currentHand);
           // Create two new hands from the split pair
-          const newHands: PlayingHand[] = [
+          const newHands = [...hands];
+          newHands.splice(
+            activeHandIndex,
+            1,
             {
               ...currentHand,
               cards: [currentHand.cards[0]],
@@ -162,52 +179,35 @@ export function PlayingTable({
               isSplit: true,
               isComplete: false,
               isDoubled: false,
-            },
-          ];
-
-          setHands((prev) => [
-            ...prev.slice(0, activeHandIndex),
-            ...newHands,
-            ...prev.slice(activeHandIndex + 1),
-          ]);
-          setShowActions(false); // Show card selection for first split hand
-        } else {
-          console.log("Cannot split hand:", currentHand);
+            }
+          );
+          setHands(newHands);
+          setIsSelectingCard(true);
+          setShowActions(false);
         }
         break;
     }
   };
 
-  const calculateHandTotal = (cards: Card[]): number => {
-    let total = 0;
-    let aces = 0;
+  const canSplit = (hand: PlayingHand) => {
+    // Check for face cards (10, J, Q, K should be splittable)
+    const isSameValue = (card1: Card, card2: Card) => {
+      const faceCards = ["10", "J", "Q", "K"];
+      if (faceCards.includes(card1) && faceCards.includes(card2)) return true;
+      return card1 === card2;
+    };
 
-    cards.forEach((card) => {
-      if (card === "A") {
-        aces += 1;
-        total += 11;
-      } else if (["K", "Q", "J"].includes(card)) {
-        total += 10;
-      } else {
-        total += parseInt(card);
-      }
-    });
-
-    // Adjust for aces
-    while (total > 21 && aces > 0) {
-      total -= 10;
-      aces -= 1;
-    }
-
-    return total;
+    return (
+      hand.cards.length === 2 &&
+      isSameValue(hand.cards[0], hand.cards[1]) &&
+      !hand.isDoubled &&
+      !hand.isSplit &&
+      // Add check for available deck cards
+      deckState[hand.cards[0]] > 0
+    );
   };
 
-  const isHandBust = (cards: Card[]): boolean => {
-    return calculateHandTotal(cards) > 21;
-  };
-
-  const handleCardSelected = (card: Card) => {
-    console.log("Card Selected:", card);
+  const handleCardSelect = (card: Card) => {
     const currentHand = hands[activeHandIndex];
     if (!currentHand) return;
 
@@ -223,376 +223,569 @@ export function PlayingTable({
 
     // Update running count
     const cardValue = getCardValue(card);
-    console.log("Card Value for counting:", card, cardValue);
     onRunningCountChange(runningCount + cardValue);
-    setCurrentRunningCount(runningCount + cardValue);
 
-    // Reset card selection state
-    setIsSelectingCard(false);
-
-    // Check for bust after adding card
+    // Check if hand should be completed
     const updatedCards = [...currentHand.cards, card];
-    if (isHandBust(updatedCards)) {
+    const total = calculateTotal(updatedCards);
+
+    if (total > 21 || currentHand.isDoubled) {
       setHands((prev) =>
         prev.map((hand, idx) =>
-          idx === activeHandIndex
-            ? { ...hand, cards: updatedCards, isComplete: true }
-            : hand
-        )
-      );
-      moveToNextHand();
-    } else if (currentHand.isDoubled) {
-      setHands((prev) =>
-        prev.map((hand, idx) =>
-          idx === activeHandIndex
-            ? { ...hand, cards: updatedCards, isComplete: true }
-            : hand
+          idx === activeHandIndex ? { ...hand, isComplete: true } : hand
         )
       );
       moveToNextHand();
     } else {
       setShowActions(true);
     }
+
+    setIsSelectingCard(false);
   };
 
-  const moveToNextHand = () => {
-    const nextIncompleteIndex = hands.findIndex(
-      (hand, idx) => idx > activeHandIndex && !hand.isComplete
-    );
+  const calculateTotal = (cards: Card[]): number => {
+    let total = 0;
+    let aces = 0;
 
-    if (nextIncompleteIndex !== -1) {
-      setActiveHandIndex(nextIncompleteIndex);
-      setShowActions(true);
-    } else {
-      setShowDealerPlay(true);
+    cards.forEach((card) => {
+      if (card === "A") {
+        aces += 1;
+        total += 11;
+      } else if (["K", "Q", "J", "10"].includes(card)) {
+        total += 10;
+      } else {
+        total += parseInt(card);
+      }
+    });
+
+    while (total > 21 && aces > 0) {
+      total -= 10;
+      aces -= 1;
     }
-  };
 
-  const handleNewSetup = () => {
-    // Keep the running count and deck state
-    // Only reset the hands and game state
-    setHands(
-      initialHands.map((hand) => ({ ...hand, cards: [], isComplete: false }))
-    );
-    setDealerHand({ cards: [dealerUpCard], hiddenCard: null });
-    setActiveHandIndex(0);
-    setShowActions(true);
-    setShowDealerPlay(false);
-    setGameComplete(false);
-    setHandResults({});
-    // Don't reset currentRunningCount - keep it!
-    onAllHandsComplete(); // This should now preserve the count and deck state
-  };
-
-  const handleLeaveTable = () => {
-    // This is the only place where we should fully reset everything
-    setHands([]);
-    setDealerHand({ cards: [], hiddenCard: null });
-    setActiveHandIndex(0);
-    setShowActions(false);
-    setShowDealerPlay(false);
-    setGameComplete(false);
-    setHandResults({});
-    setCurrentRunningCount(0);
-    onAllHandsComplete();
-    // Now you can safely navigate away or end the game
-    window.location.href = "/";
-  };
-
-  const calculateHandResult = (
-    playerHand: PlayingHand,
-    dealerCards: Card[]
-  ) => {
-    const playerTotal = calculateHandTotal(playerHand.cards);
-    const dealerTotal = calculateHandTotal(dealerCards);
-
-    if (isHandBust(playerHand.cards)) return "lose";
-    if (isHandBust(dealerCards)) return "win";
-
-    if (playerTotal > dealerTotal) return "win";
-    if (playerTotal < dealerTotal) return "lose";
-    return "push";
+    return total;
   };
 
   const handleDealerComplete = (finalDealerCards: Card[]) => {
+    const dealerTotal = calculateTotal(finalDealerCards);
+
     // Calculate results for all hands
-    const results: Record<number, "win" | "lose" | "push"> = {};
-    hands.forEach((hand) => {
-      results[hand.id] = calculateHandResult(hand, finalDealerCards);
+    const handResults = hands.map((hand) => {
+      const playerTotal = calculateTotal(hand.cards);
+      let result: "win" | "lose" | "push" = "push";
+
+      // Determine result
+      if (playerTotal > 21) {
+        result = "lose";
+      } else if (dealerTotal > 21) {
+        result = "win";
+      } else if (playerTotal > dealerTotal) {
+        result = "win";
+      } else if (playerTotal < dealerTotal) {
+        result = "lose";
+      }
+
+      // Call onHandComplete for each hand with the correct bet amount
+      onHandComplete({
+        ...hand,
+        isComplete: true,
+        bet: hand.bet, // Use the original bet amount
+      });
+
+      return {
+        cards: hand.cards,
+        total: playerTotal,
+        bet: hand.bet, // Use the original bet amount, not doubled
+        result,
+        isYourHand: hand.isYourHand,
+      };
     });
 
-    setHandResults(results);
-    setDealerHand((prev) => ({
-      ...prev,
-      cards: finalDealerCards,
-    }));
-    setGameComplete(true);
-    onAllHandsComplete();
+    // Set round stats
+    setRoundStats({
+      dealerTotal,
+      dealerCards: finalDealerCards,
+      playerHands: handResults,
+    });
+
+    // Update table statistics
+    const newTableStats = { ...tableStats };
+    handResults.forEach((hand) => {
+      newTableStats.totalHands++;
+
+      // Use the original bet amount for statistics
+      const effectiveBet = hand.bet;
+
+      if (hand.result === "win") {
+        newTableStats.handsWon++;
+        newTableStats.totalBetsWon += effectiveBet; // Use original bet amount
+        newTableStats.biggestWin = Math.max(
+          newTableStats.biggestWin,
+          effectiveBet
+        );
+        newTableStats.currentStreak++;
+        newTableStats.longestWinStreak = Math.max(
+          newTableStats.longestWinStreak,
+          newTableStats.currentStreak
+        );
+      } else if (hand.result === "lose") {
+        newTableStats.handsLost++;
+        newTableStats.totalBetsLost += effectiveBet; // Use original bet amount
+        newTableStats.biggestLoss = Math.max(
+          newTableStats.biggestLoss,
+          effectiveBet
+        );
+        newTableStats.currentStreak = Math.min(
+          0,
+          newTableStats.currentStreak - 1
+        );
+        newTableStats.longestLoseStreak = Math.min(
+          newTableStats.longestLoseStreak,
+          newTableStats.currentStreak
+        );
+      } else {
+        newTableStats.handsPushed++;
+      }
+    });
+
+    setTableStats(newTableStats);
+    setIsRoundComplete(true);
+    setHands(hands.map((hand) => ({ ...hand, isComplete: true })));
   };
 
-  return (
-    <div className="space-y-6 text-white">
-      <div className="bg-primary/20 dark:bg-primary/30 -mx-4 -mt-4 px-4 py-3 border-b border-border">
-        <div className="text-lg font-semibold">Playing Hands</div>
-      </div>
+  const renderRoundSummary = () => {
+    if (!roundStats) return null;
 
-      <div className="space-y-4">
-        {/* Display Running Count and True Count */}
-        <div className="flex justify-between text-sm font-medium">
-          <span>Running Count: {currentRunningCount}</span>
-          <span>True Count: {trueCount}</span>
-        </div>
-
-        {/* Dealer's Hand */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Dealer&apos;s Hand</label>
-          <div className="flex gap-2 h-16 items-center rounded-lg px-3 border border-border bg-background/80">
-            {dealerHand.cards.map((card, i) => (
-              <Badge
-                key={i}
-                variant="outline"
-                className={cn(
-                  "h-10 w-8 flex items-center justify-center text-lg font-medium",
-                  getCardColor(card)
-                )}
-              >
-                {card}
-              </Badge>
-            ))}
-            <Badge
-              variant="outline"
-              className="h-10 w-8 flex items-center justify-center text-lg font-medium bg-primary/25 text-primary-foreground"
-            >
-              ?
-            </Badge>
+    return (
+      <div className="space-y-6 text-cyan-100">
+        <div className="bg-black/40 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
+          <div className="text-lg font-mono font-semibold text-cyan-300">
+            ROUND COMPLETE
           </div>
         </div>
 
-        {/* Player Hands */}
-        {!showDealerPlay && (
-          <div className="space-y-3">
-            {hands.map((hand, index) => (
-              <div
-                key={hand.id}
-                className={cn(
-                  "space-y-2 p-3 rounded-lg border",
-                  index === activeHandIndex
-                    ? "border-primary bg-background"
-                    : "border-border bg-background/60",
-                  hand.isComplete && "opacity-60"
-                )}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                      Hand {index + 1}
-                    </span>
-                    {hand.isYourHand && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs border-primary"
-                      >
-                        You
-                      </Badge>
-                    )}
-                    {isHandBust(hand.cards) ? (
-                      <Badge variant="destructive" className="text-xs">
-                        Bust ({calculateHandTotal(hand.cards)})
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        Total: {calculateHandTotal(hand.cards)}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge variant="outline">${hand.bet}</Badge>
-                </div>
-
-                <div className="flex gap-2">
-                  {hand.cards.map((card, i) => (
-                    <Badge
-                      key={i}
-                      variant="outline"
-                      className={cn(
-                        "h-10 w-8 flex items-center justify-center text-lg font-medium",
-                        getCardColor(card)
-                      )}
-                    >
-                      {card}
-                    </Badge>
-                  ))}
-                </div>
-
-                {index === activeHandIndex &&
-                  !hand.isComplete &&
-                  !isHandBust(hand.cards) && (
-                    <>
-                      <StrategyAdvice
-                        dealerUpCard={dealerHand.cards[0]}
-                        playerCards={hand.cards}
-                        deckState={deckState}
-                        runningCount={currentRunningCount}
-                        countingSystem={countingSystem}
-                      />
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => handleAction("stand")}
-                          className="text-white"
-                        >
-                          Stand
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleAction("hit")}
-                          className="text-white"
-                        >
-                          Hit
-                        </Button>
-                        {hand.cards.length === 2 && (
-                          <>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleAction("double")}
-                              disabled={hand.isDoubled || hand.isSplit}
-                              className="text-white"
-                            >
-                              Double
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleAction("split")}
-                              disabled={!canSplit(hand)}
-                              className="text-white"
-                            >
-                              Split
-                              {process.env.NODE_ENV === "development" && (
-                                <span className="text-xs opacity-50">
-                                  ({hand.cards.join(",")})
-                                </span>
-                              )}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
+        <div className="space-y-6 p-4">
+          {/* Dealer's Final Hand */}
+          <div className="space-y-2">
+            <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+              Dealer Final Hand
+            </label>
+            <div className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-mono text-cyan-300">
+                  TOTAL: {roundStats.dealerTotal}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Dealer Play */}
-        {showDealerPlay && (
-          <DealerPlay
-            upCard={dealerHand.cards[0]}
-            deckState={deckState}
-            onCardSelect={(card) => {
-              onCardSelect(card);
-              const cardValue = getCardValue(card);
-              console.log("Dealer card value for counting:", card, cardValue);
-              onRunningCountChange(runningCount + cardValue);
-              setCurrentRunningCount(runningCount + cardValue);
-            }}
-            onComplete={handleDealerComplete}
-          />
-        )}
-
-        {/* Next Round Button */}
-        {gameComplete && (
-          <div className="space-y-4">
-            <div className="bg-primary/20 p-4 rounded-lg border border-primary/30">
-              <h3 className="text-lg font-semibold mb-3">Hand Results</h3>
-              <div className="space-y-2">
-                {hands.map((hand) => (
-                  <div
-                    key={hand.id}
-                    className="flex justify-between items-center p-2 bg-background/50 rounded-lg"
+              <div className="flex gap-2">
+                {roundStats.dealerCards.map((card, i) => (
+                  <Badge
+                    key={i}
+                    variant="outline"
+                    className={cn(
+                      "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                      getCardColor(card)
+                    )}
                   >
+                    {card}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Player Hands Results */}
+          <div className="space-y-2">
+            <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+              Player Hands
+            </label>
+            <div className="space-y-3">
+              {roundStats.playerHands.map((hand, index) => (
+                <div
+                  key={index}
+                  className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 backdrop-blur-sm"
+                >
+                  <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">Hand {hand.id + 1}</span>
+                      <span className="font-mono text-cyan-300">
+                        HAND {index + 1}
+                      </span>
                       {hand.isYourHand && (
                         <Badge
                           variant="outline"
-                          className="text-xs border-primary"
+                          className="text-xs border-cyan-500/30 font-mono bg-cyan-500/10"
                         >
-                          You
+                          YOU
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">
-                        {calculateHandTotal(hand.cards)} vs{" "}
-                        {calculateHandTotal(dealerHand.cards)}
-                      </span>
-                      <Badge
-                        variant={
-                          handResults[hand.id] === "win"
-                            ? "default"
-                            : handResults[hand.id] === "lose"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {handResults[hand.id]?.toUpperCase()}
-                      </Badge>
-                    </div>
+                    <Badge
+                      variant={
+                        hand.result === "win"
+                          ? "default"
+                          : hand.result === "lose"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                      className="font-mono"
+                    >
+                      {hand.result.toUpperCase()}
+                    </Badge>
                   </div>
+                  <div className="flex gap-2 mb-2">
+                    {hand.cards.map((card, i) => (
+                      <Badge
+                        key={i}
+                        variant="outline"
+                        className={cn(
+                          "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                          getCardColor(card)
+                        )}
+                      >
+                        {card}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-mono text-cyan-300">
+                      TOTAL: {hand.total}
+                    </span>
+                    <span className="font-mono text-cyan-300">
+                      BET: ${hand.bet}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Add Table Statistics Section */}
+          <div className="space-y-2">
+            <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+              Table Statistics
+            </label>
+            <div className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 backdrop-blur-sm space-y-4">
+              {/* Win/Loss Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    TOTAL HANDS
+                  </div>
+                  <div className="text-lg font-mono text-cyan-300">
+                    {tableStats.totalHands}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    WIN RATE
+                  </div>
+                  <div className="text-lg font-mono text-green-400">
+                    {(
+                      (tableStats.handsWon / tableStats.totalHands) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    PUSH RATE
+                  </div>
+                  <div className="text-lg font-mono text-cyan-300">
+                    {(
+                      (tableStats.handsPushed / tableStats.totalHands) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </div>
+                </div>
+              </div>
+
+              {/* Money Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    TOTAL WON
+                  </div>
+                  <div className="text-lg font-mono text-green-400">
+                    ${tableStats.totalBetsWon}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    TOTAL LOST
+                  </div>
+                  <div className="text-lg font-mono text-red-400">
+                    ${tableStats.totalBetsLost}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    BIGGEST WIN
+                  </div>
+                  <div className="text-lg font-mono text-green-400">
+                    ${tableStats.biggestWin}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    BIGGEST LOSS
+                  </div>
+                  <div className="text-lg font-mono text-red-400">
+                    ${tableStats.biggestLoss}
+                  </div>
+                </div>
+              </div>
+
+              {/* Streak Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    CURRENT STREAK
+                  </div>
+                  <div
+                    className={cn(
+                      "text-lg font-mono",
+                      tableStats.currentStreak > 0
+                        ? "text-green-400"
+                        : tableStats.currentStreak < 0
+                        ? "text-red-400"
+                        : "text-cyan-300"
+                    )}
+                  >
+                    {Math.abs(tableStats.currentStreak)}
+                    {tableStats.currentStreak > 0
+                      ? " WINS"
+                      : tableStats.currentStreak < 0
+                      ? " LOSSES"
+                      : " NONE"}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-mono text-cyan-400">
+                    BEST STREAK
+                  </div>
+                  <div className="text-lg font-mono text-green-400">
+                    {tableStats.longestWinStreak} WINS
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* New Round Button */}
+          <Button
+            className={cn(
+              "w-full h-12 text-lg font-mono mt-6",
+              "bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500",
+              "hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600",
+              "text-white shadow-neon-lg transition-all duration-300"
+            )}
+            onClick={onAllHandsComplete}
+          >
+            NEW ROUND
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6 text-cyan-100">
+      {isRoundComplete ? (
+        renderRoundSummary()
+      ) : (
+        <>
+          <div className="bg-black/40 -mx-4 -mt-4 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
+            <div className="text-lg font-mono font-semibold text-cyan-300">
+              PLAYING HAND {activeHandIndex + 1}/{hands.length}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Dealer's Hand */}
+            <div className="space-y-2">
+              <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+                Dealer Protocol
+              </label>
+              <div className="flex gap-2 h-16 items-center bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
+                {dealerHand.cards.map((card, i) => (
+                  <Badge
+                    key={i}
+                    variant="outline"
+                    className={cn(
+                      "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                      getCardColor(card)
+                    )}
+                  >
+                    {card}
+                  </Badge>
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                onClick={handleNewSetup}
-                className="bg-primary text-white hover:bg-primary/90"
-              >
-                New Setup
-              </Button>
-              <Button
-                onClick={handleLeaveTable}
-                variant="outline"
-                className="text-white"
-              >
-                Leave Table
-              </Button>
-            </div>
-          </div>
-        )}
+            {/* Player Hands */}
+            {!showDealerPlay && (
+              <div className="space-y-3">
+                {hands.map((hand, index) => (
+                  <div
+                    key={hand.id}
+                    className={cn(
+                      "space-y-2 p-3 rounded-lg border backdrop-blur-sm",
+                      index === activeHandIndex
+                        ? "border-cyan-500 bg-black/60 shadow-neon"
+                        : "border-cyan-500/30 bg-black/40",
+                      hand.isComplete && "opacity-60"
+                    )}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-mono text-cyan-300">
+                          HAND {index + 1}
+                        </span>
+                        {hand.isYourHand && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-cyan-500/30 font-mono"
+                          >
+                            YOU
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="font-mono text-cyan-300 border-cyan-500/30"
+                        >
+                          BET: ${hand.bet}
+                        </Badge>
+                        {hand.isDoubled && (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-purple-300 border-purple-500/30"
+                          >
+                            DOUBLED
+                          </Badge>
+                        )}
+                        {hand.isSplit && (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-blue-300 border-blue-500/30"
+                          >
+                            SPLIT
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
 
-        {isSelectingCard && (
-          <div className="grid grid-cols-5 gap-1.5">
-            {Object.entries(deckState).map(([card, count]) => (
-              <Button
-                key={card}
-                variant="outline"
-                onClick={() => {
-                  console.log("Button Clicked:", card);
-                  handleCardSelected(card as Card);
-                }}
-                disabled={count === 0}
-                className={cn(
-                  "h-12 text-lg font-medium relative transition-colors",
-                  getCardColor(card as Card),
-                  count === 0 && "opacity-50"
-                )}
-              >
-                {card}
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "absolute -top-2 -right-2 h-5 w-5 text-xs",
-                    getCardColor(card as Card)
-                  )}
-                >
-                  {count}
-                </Badge>
-              </Button>
-            ))}
+                    <div className="flex gap-2">
+                      {hand.cards.map((card, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className={cn(
+                            "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                            getCardColor(card)
+                          )}
+                        >
+                          {card}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {index === activeHandIndex &&
+                      !hand.isComplete &&
+                      showActions && (
+                        <>
+                          <StrategyAdvice
+                            dealerUpCard={dealerHand.cards[0]}
+                            playerCards={hand.cards}
+                            deckState={deckState}
+                            runningCount={runningCount}
+                            countingSystem={countingSystem}
+                          />
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleAction("stand")}
+                              className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                            >
+                              STAND
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleAction("hit")}
+                              className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                            >
+                              HIT
+                            </Button>
+                            {hand.cards.length === 2 && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleAction("double")}
+                                  disabled={hand.isDoubled || hand.isSplit}
+                                  className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                                >
+                                  DOUBLE
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleAction("split")}
+                                  disabled={!canSplit(hand)}
+                                  className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                                >
+                                  SPLIT
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Card Selection Grid */}
+            {isSelectingCard && (
+              <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
+                {Object.entries(deckState).map(([card, count]) => (
+                  <Button
+                    key={card}
+                    variant="outline"
+                    onClick={() => handleCardSelect(card as Card)}
+                    disabled={count === 0}
+                    className={cn(
+                      "h-12 text-lg font-mono relative transition-colors",
+                      "bg-black/40 border-cyan-500/30",
+                      "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+                      count === 0 && "opacity-50"
+                    )}
+                  >
+                    {card}
+                    <Badge
+                      variant="outline"
+                      className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
+                    >
+                      {count}
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {/* Dealer Play */}
+            {showDealerPlay && (
+              <DealerPlay
+                upCard={dealerHand.cards[0]}
+                deckState={deckState}
+                onCardSelect={onCardSelect}
+                onComplete={handleDealerComplete}
+              />
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

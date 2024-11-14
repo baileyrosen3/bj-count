@@ -61,17 +61,24 @@ export function DealerPlay({
 
   return (
     <div className="space-y-4">
-      <div className="bg-primary/20 dark:bg-primary/30 -mx-4 -mt-4 px-4 py-3 border-b border-border">
-        <div className="text-lg font-semibold">Dealer&apos;s Turn</div>
+      <div className="bg-black/40 -mx-4 -mt-4 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
+        <div className="text-lg font-mono font-semibold text-cyan-300">
+          DEALER PROTOCOL
+        </div>
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">Dealer&apos;s Cards</span>
-          <Badge variant="outline">Total: {calculateTotal(dealerCards)}</Badge>
+          <span className="text-sm font-mono text-cyan-400">DEALER CARDS</span>
+          <Badge
+            variant="outline"
+            className="font-mono text-cyan-300 border-cyan-500/30"
+          >
+            TOTAL: {calculateTotal(dealerCards)}
+          </Badge>
         </div>
 
-        <div className="flex gap-2 h-16 items-center bg-background/80 rounded-lg px-3 border border-border">
+        <div className="flex gap-2 h-16 items-center bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
           {dealerCards.map((card, i) => (
             <Badge
               key={i}
@@ -88,8 +95,10 @@ export function DealerPlay({
 
         {showingDownCard ? (
           <div className="space-y-2">
-            <div className="text-sm font-medium">Select Down Card</div>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="text-sm font-mono text-cyan-400">
+              SELECT DOWN CARD
+            </div>
+            <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
               {Object.entries(deckState).map(([card, count]) => (
                 <Button
                   key={card}
@@ -121,28 +130,26 @@ export function DealerPlay({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  onComplete(dealerCards);
-                }}
-                className="text-white"
+                onClick={() => onComplete(dealerCards)}
+                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
               >
-                Stand
+                STAND
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowingDownCard(true)}
-                className="text-white"
+                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
                 disabled={calculateTotal(dealerCards) >= 17}
               >
-                Hit
+                HIT
               </Button>
             </div>
             {calculateTotal(dealerCards) >= 17 && (
               <Button
-                className="w-full bg-primary text-white"
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-mono shadow-neon"
                 onClick={() => onComplete(dealerCards)}
               >
-                Complete Dealer&apos;s Turn
+                COMPLETE DEALER TURN
               </Button>
             )}
           </div>

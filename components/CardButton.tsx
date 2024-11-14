@@ -15,8 +15,10 @@ export function CardButton({ card, onClick, disabled }: CardButtonProps) {
     <Button
       variant="outline"
       className={cn(
-        "h-16 w-12 text-lg font-bold border-2",
-        "text-black",
+        "h-16 w-12 text-lg font-mono border-2",
+        "bg-black/40 border-cyan-500/30",
+        "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+        "text-cyan-300",
         disabled && "opacity-50"
       )}
       onClick={onClick}

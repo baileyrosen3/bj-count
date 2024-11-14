@@ -22,56 +22,54 @@ export function BankrollStats({ bankroll, stats }: BankrollStatsProps) {
       : "0.0";
 
   return (
-    <Card className="w-full bg-card/50 backdrop-blur-sm border-border/50">
+    <Card className="w-full bg-black/40 border-cyan-500/30 shadow-neon backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-xl text-foreground">
-          Session Statistics
+        <CardTitle className="text-xl font-mono text-cyan-300 tracking-wide">
+          SYSTEM METRICS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 font-mono">
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Current Bankroll</span>
-            <span className="font-bold text-foreground">
+            <span className="text-cyan-400">CURRENT BANKROLL</span>
+            <span className="font-bold text-cyan-300">
               ${bankroll.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Win Rate</span>
-            <span className="font-bold text-foreground">{winRate}%</span>
+            <span className="text-cyan-400">WIN RATE</span>
+            <span className="font-bold text-cyan-300">{winRate}%</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Hands Played</span>
-            <span className="font-bold text-foreground">
-              {stats.handsPlayed}
-            </span>
+            <span className="text-cyan-400">HANDS PLAYED</span>
+            <span className="font-bold text-cyan-300">{stats.handsPlayed}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Peak Bankroll</span>
-            <span className="font-bold text-foreground">
+            <span className="text-cyan-400">PEAK BANKROLL</span>
+            <span className="font-bold text-cyan-300">
               ${stats.peakBankroll.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Biggest Win</span>
+            <span className="text-cyan-400">BIGGEST WIN</span>
             <span className="font-bold text-green-400">
               ${stats.biggestWin.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Biggest Loss</span>
+            <span className="text-cyan-400">BIGGEST LOSS</span>
             <span className="font-bold text-red-400">
               ${stats.biggestLoss.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Total Winnings</span>
+            <span className="text-cyan-400">TOTAL WINNINGS</span>
             <span className="font-bold text-green-400">
               ${stats.totalWinnings.toFixed(2)}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-foreground">Total Losses</span>
+            <span className="text-cyan-400">TOTAL LOSSES</span>
             <span className="font-bold text-red-400">
               ${stats.totalLosses.toFixed(2)}
             </span>

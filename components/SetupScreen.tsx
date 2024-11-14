@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { CountingSystem, COUNTING_SYSTEMS } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface SetupScreenProps {
   onStart: (
@@ -54,39 +55,39 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
   );
 
   return (
-    <div className="flex flex-col items-center space-y-10 p-6 w-full max-w-md mx-auto">
-      <h1 className="text-4xl font-semibold text-foreground tracking-tight">
-        Card Counter
+    <div className="flex flex-col items-center space-y-10 p-6 w-full max-w-md mx-auto relative">
+      <div className="absolute inset-0 pointer-events-none scanlines opacity-20" />
+
+      <h1 className="text-4xl font-mono text-foreground tracking-tight relative glow-text">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500">
+          Card Counter v1.0
+        </span>
       </h1>
 
-      <div className="flex flex-col w-full space-y-8">
+      <div className="flex flex-col w-full space-y-8 retro-terminal-bg p-6 rounded-lg border border-cyan-500/30 shadow-neon">
         <div className="w-full space-y-3">
-          <Label className="text-lg font-medium text-foreground">
-            Counting System
+          <Label className="text-lg font-mono text-cyan-400 uppercase tracking-wide">
+            Select System.exe
           </Label>
           <Select
             value={selectedSystem}
-            onValueChange={(value) =>
+            onValueChange={(value: string) =>
               setSelectedSystem(value as CountingSystem)
             }
           >
-            <SelectTrigger className="w-full bg-card/50 border-border/50 text-foreground h-12 text-base px-4 pt-12 pb-12">
-              <SelectValue placeholder="Select a counting system" />
+            <SelectTrigger className="w-full bg-black/50 border-cyan-500/50 text-cyan-300 h-12 text-base px-4 font-mono hover:border-pink-500/50 transition-colors pt-12 pb-12">
+              <SelectValue placeholder="INITIALIZE COUNTING SYSTEM" />
             </SelectTrigger>
-            <SelectContent
-              className="bg-background/95 backdrop-blur-sm border-border/50 w-[var(--radix-select-trigger-width)] max-h-[300px]"
-              position="popper"
-              sideOffset={5}
-            >
+            <SelectContent className="bg-black/95 backdrop-blur-sm border-cyan-500/50 font-mono">
               {COUNTING_SYSTEMS.map((system) => (
                 <SelectItem
                   key={system.name}
                   value={system.name}
-                  className="py-2.5 px-4 focus:bg-accent/50"
+                  className="py-2.5 px-4 focus:bg-cyan-500/20"
                 >
                   <div className="flex flex-col space-y-1.5 pr-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">
+                      <span className="font-mono truncate text-cyan-300">
                         {system.name}
                       </span>
                       <Badge
@@ -97,12 +98,12 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                             ? "secondary"
                             : "destructive"
                         }
-                        className="font-medium text-xs shrink-0"
+                        className="font-mono text-xs shrink-0 bg-gradient-to-r from-cyan-500 to-purple-500"
                       >
                         {system.complexity}
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground line-clamp-2">
+                    <span className="text-xs text-cyan-300/70 line-clamp-2">
                       {system.description}
                     </span>
                   </div>
@@ -116,7 +117,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
                 <Badge
                   key={tag}
                   variant="outline"
-                  className="text-xs px-2 py-0.5"
+                  className="text-xs px-2 py-0.5 border-cyan-500/30 text-cyan-300"
                 >
                   {tag}
                 </Badge>
@@ -125,59 +126,61 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
           )}
         </div>
 
-        <div className="flex flex-col space-y-3">
-          <label className="text-lg font-medium text-foreground">
-            Number of Decks
-          </label>
-          <div className="flex items-center gap-4 bg-card/50 p-3 rounded-xl border border-border/50 backdrop-blur-sm">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => adjustDecks(false)}
-              disabled={numberOfDecks <= 1}
-              className="h-10 w-10 hover:bg-background/50"
-            >
-              <Minus className="h-5 w-5" />
-            </Button>
-            <span className="w-8 text-center text-2xl font-medium text-foreground">
-              {numberOfDecks}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => adjustDecks(true)}
-              disabled={numberOfDecks >= 8}
-              className="h-10 w-10 hover:bg-background/50"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex flex-col space-y-3 h-[104px]">
+            <label className="text-lg font-mono text-cyan-400 uppercase tracking-wide">
+              Deck Config
+            </label>
+            <div className="flex items-center gap-4 bg-black/50 p-3 rounded-xl border border-cyan-500/30 backdrop-blur-sm h-[48px]">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => adjustDecks(false)}
+                disabled={numberOfDecks <= 1}
+                className="h-8 w-8 hover:bg-cyan-500/20 border border-cyan-500/30"
+              >
+                <Minus className="h-4 w-4 text-cyan-400" />
+              </Button>
+              <span className="w-8 text-center text-2xl font-mono text-cyan-300">
+                {numberOfDecks}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => adjustDecks(true)}
+                disabled={numberOfDecks >= 8}
+                className="h-8 w-8 hover:bg-cyan-500/20 border border-cyan-500/30"
+              >
+                <Plus className="h-4 w-4 text-cyan-400" />
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-3">
-          <Label className="text-lg font-medium text-foreground">
-            Starting Bankroll
-          </Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground text-lg">
-              $
-            </span>
-            <Input
-              type="number"
-              value={bankroll}
-              onChange={(e) => handleBankrollChange(e.target.value)}
-              className="pl-9 h-12 bg-card/50 border-border/50 text-foreground text-lg"
-              min={1}
-            />
+          <div className="flex flex-col space-y-3 h-[104px]">
+            <Label className="text-lg font-mono text-cyan-400 uppercase tracking-wide">
+              Bankroll
+            </Label>
+            <div className="relative h-[48px]">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-300 text-lg">
+                $
+              </span>
+              <Input
+                type="number"
+                value={bankroll}
+                onChange={(e) => handleBankrollChange(e.target.value)}
+                className="pl-9 h-full bg-black/50 border-cyan-500/30 text-cyan-300 text-lg font-mono"
+                min={1}
+              />
+            </div>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label className="text-lg font-medium text-foreground">
+            <Label className="text-lg font-mono text-cyan-400 uppercase tracking-wide">
               Unit Size
             </Label>
-            <span className="text-lg font-medium text-foreground bg-card/50 px-3 py-1.5 rounded-lg border border-border/50">
+            <span className="text-lg font-mono text-cyan-300 bg-black/50 px-3 py-1.5 rounded-lg border border-cyan-500/30">
               ${unitSize}
             </span>
           </div>
@@ -193,12 +196,17 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
       </div>
 
       <Button
-        className="w-full max-w-[250px] h-12 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+        className={cn(
+          "w-full max-w-[250px] h-12 text-lg font-mono mx-auto",
+          "bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500",
+          "hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600",
+          "text-white shadow-neon-lg transition-all duration-300"
+        )}
         onClick={() =>
           onStart(numberOfDecks, bankroll, unitSize, selectedSystem)
         }
       >
-        Start Game
+        INITIALIZE GAME
       </Button>
     </div>
   );

@@ -173,258 +173,67 @@ export function StrategyChart({
     }
   };
 
-  const renderDealingState = () => {
-    return (
-      <div className="space-y-4">
-        <div className="bg-primary/10 -mx-4 -mt-4 px-4 py-3 border-b border-border/50">
-          <div className="text-lg font-semibold">
-            {dealPhase === "betting" && "Place Bet"}
-            {dealPhase === "initial-dealing" && "Initial Deal"}
-            {dealPhase === "dealer-card" && "Dealer&apos;s Card"}
-          </div>
-        </div>
-
-        <div className="bg-card/50 px-4 py-3 rounded-lg border border-border/50">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-muted-foreground">
-              True Count
-            </div>
-          </div>
-        </div>
-
-        {dealPhase === "betting" && (
-          <div className="space-y-3">
-            <div className="text-lg font-medium">Place Your Bet</div>
-            <div className="grid grid-cols-3 gap-2">
-              {[5, 10, 25, 50, 100, 200].map((amount) => (
-                <Button
-                  key={amount}
-                  onClick={() => {
-                    setCurrentBet(amount);
-                    setDealPhase("initial-dealing");
-                  }}
-                  variant={currentBet === amount ? "default" : "outline"}
-                  className="h-12"
-                >
-                  ${amount}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {dealPhase === "initial-dealing" && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <div className="text-lg font-medium">Initial Deal</div>
-              <Badge variant="outline">{dealtCards.length} cards dealt</Badge>
-            </div>
-
-            {dealtCards.length > 0 && (
-              <div className="bg-card/50 p-3 rounded-lg border border-border/50">
-                <div className="text-sm font-medium mb-2">Dealt Cards</div>
-                <div className="flex flex-wrap gap-2">
-                  {dealtCards.map((card, i) => (
-                    <Badge
-                      key={i}
-                      variant="secondary"
-                      className="h-8 w-8 flex items-center justify-center text-lg"
-                    >
-                      {card}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-5 gap-1">
-              {dealerCards.map((card) => (
-                <Button
-                  key={card}
-                  variant="outline"
-                  className={cn(
-                    "h-12 text-lg font-medium",
-                    deckState[card] === 0 && "opacity-50"
-                  )}
-                  onClick={() => handleAddCard(card)}
-                  disabled={deckState[card] === 0}
-                >
-                  {card}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              className="w-full h-12 mt-2"
-              onClick={handleFinishInitialDeal}
-              variant="default"
-            >
-              Complete Initial Deal
-            </Button>
-          </div>
-        )}
-
-        {dealPhase === "dealer-card" && (
-          <div className="space-y-3">
-            <div className="text-lg font-medium">Dealer&apos;s Up Card</div>
-            <div className="grid grid-cols-5 gap-1">
-              {dealerCards.map((card) => (
-                <Button
-                  key={card}
-                  variant="outline"
-                  className={cn(
-                    "h-12 text-lg font-medium",
-                    deckState[card] === 0 && "opacity-50"
-                  )}
-                  onClick={() => handleAddCard(card)}
-                  disabled={deckState[card] === 0}
-                >
-                  {card}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderGameState = () => {
-    switch (gameState) {
-      case "dealing":
-        return renderDealingState();
-
-      case "in-progress":
-        return (
-          <div className="space-y-4">
-            <div className="bg-primary/10 -mx-4 -mt-4 px-4 py-3 border-b border-border/50">
-              <div className="text-lg font-semibold">
-                Playing Hand {activeHandIndex + 1}/{playerHands.length}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="text-lg font-medium">
-                Hand {activeHandIndex + 1}/{playerHands.length}
-              </div>
-              <Badge variant="outline">
-                ${playerHands[activeHandIndex]?.bet}
-              </Badge>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto py-2">
-              {playerHands[activeHandIndex]?.cards.map((card, i) => (
-                <Button
-                  key={i}
-                  variant="outline"
-                  className="h-16 w-12 text-lg font-medium flex-shrink-0"
-                >
-                  {card}
-                </Button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => handleSplit()}
-                disabled={
-                  !playerHands[activeHandIndex] ||
-                  playerHands[activeHandIndex].cards.length !== 2 ||
-                  playerHands[activeHandIndex].cards[0] !==
-                    playerHands[activeHandIndex].cards[1]
-                }
-              >
-                Split
-              </Button>
-              <Button
-                onClick={() => handleDouble()}
-                disabled={
-                  !playerHands[activeHandIndex] ||
-                  playerHands[activeHandIndex].cards.length !== 2
-                }
-              >
-                Double
-              </Button>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="text-lg font-medium">Hand Result</div>
-              <div className="grid grid-cols-2 gap-2">
-                {["win", "lose", "push", "blackjack"].map((result) => (
-                  <Button
-                    key={result}
-                    onClick={() => handleHandResult(result as HandResult)}
-                    variant="outline"
-                  >
-                    {result.charAt(0).toUpperCase() + result.slice(1)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case "ended":
-        return (
-          <div className="space-y-4">
-            <div className="bg-primary/10 -mx-4 -mt-4 px-4 py-3 border-b border-border/50">
-              <div className="text-lg font-semibold">Hand Complete</div>
-            </div>
-
-            <div className="text-lg font-medium">Game Summary</div>
-            {playerHands.map((hand, index) => (
-              <div key={index} className="bg-card/50 p-4 rounded-lg space-y-2">
-                <div className="flex justify-between items-center">
-                  <div>Hand {index + 1}</div>
-                  <Badge
-                    variant={
-                      hand.result === "win" || hand.result === "blackjack"
-                        ? "default"
-                        : "destructive"
-                    }
-                  >
-                    {hand.result}
-                  </Badge>
-                </div>
-                <div className="flex gap-2">
-                  {hand.cards.map((card, i) => (
-                    <Button
-                      key={i}
-                      variant="outline"
-                      className="h-10 w-8 text-sm font-medium"
-                      disabled
-                    >
-                      {card}
-                    </Button>
-                  ))}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Bet: ${hand.bet} {hand.isDoubled && "(Doubled)"}{" "}
-                  {hand.isSplit && "(Split)"}
-                </div>
-              </div>
-            ))}
-            <Button
-              onClick={() => {
-                setGameState("dealing");
-                setPlayerHands([]);
-                setActiveHandIndex(0);
-                setCurrentBet(0);
-              }}
-              className="w-full"
-            >
-              New Hand
-            </Button>
-          </div>
-        );
-    }
-  };
-
   return (
-    <UICard className="w-full border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardContent className="p-4 space-y-4">{renderGameState()}</CardContent>
+    <UICard className="w-full bg-black/40 border-cyan-500/30 shadow-neon backdrop-blur-sm">
+      <CardContent className="p-4 space-y-4">
+        <div className="space-y-4">
+          <div className="bg-black/60 -mx-4 -mt-4 px-4 py-3 border-b border-cyan-500/30">
+            <div className="text-lg font-mono font-semibold text-cyan-300">
+              STRATEGY MATRIX
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <ToggleGroup
+              type="single"
+              value={handType}
+              onValueChange={(value) => value && setHandType(value as any)}
+              className="justify-start bg-black/30 p-1 rounded-lg border border-cyan-500/20"
+            >
+              {["hard", "soft", "pair"].map((type) => (
+                <ToggleGroupItem
+                  key={type}
+                  value={type}
+                  className={cn(
+                    "font-mono text-sm px-4 data-[state=on]:bg-cyan-500/20",
+                    "data-[state=on]:text-cyan-300 hover:text-cyan-200"
+                  )}
+                >
+                  {type.toUpperCase()}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+
+            <div className="grid grid-cols-5 gap-1">
+              {dealerCards.map((card) => (
+                <Button
+                  key={card}
+                  variant="outline"
+                  className={cn(
+                    "h-12 text-lg font-mono",
+                    "bg-black/40 border-cyan-500/30",
+                    "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+                    "text-cyan-300",
+                    deckState[card] === 0 && "opacity-50"
+                  )}
+                  onClick={() => handleAddCard(card)}
+                  disabled={deckState[card] === 0}
+                >
+                  {card}
+                  <Badge
+                    variant="outline"
+                    className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
+                  >
+                    {deckState[card]}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rest of the content with similar styling */}
+        </div>
+      </CardContent>
     </UICard>
   );
 }

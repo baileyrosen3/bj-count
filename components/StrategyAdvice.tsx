@@ -93,31 +93,33 @@ export function StrategyAdvice({
   const description = getActionDescription(action);
 
   return (
-    <div className="flex flex-col gap-2 bg-background/50 dark:bg-background/20 p-3 rounded-lg border border-primary/20">
+    <div className="flex flex-col gap-2 bg-black/50 p-3 rounded-lg border border-cyan-500/30 shadow-neon backdrop-blur-sm">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">
-            Recommended Play
+          <span className="text-sm font-mono text-cyan-300">
+            OPTIMAL STRATEGY
           </span>
           <Badge
             variant="secondary"
-            className="text-xs bg-primary/20 text-primary-foreground border-primary/30"
+            className="text-xs bg-purple-500/20 text-purple-200 border-purple-500/30 font-mono"
           >
             {countingSystem}
           </Badge>
         </div>
         <Badge
           variant="outline"
-          className="text-xs border-primary/30 text-primary-foreground"
+          className="text-xs border-cyan-500/30 text-cyan-300 font-mono"
         >
           {getHandType(playerCards).toUpperCase()}
         </Badge>
       </div>
-      <div className="text-lg font-semibold text-white">{description}</div>
-      <div className="flex justify-between items-center text-xs text-white/60">
-        <span>vs Dealer {dealerUpCard}</span>
+      <div className="text-lg font-mono font-semibold text-cyan-100 glow-text">
+        {description}
+      </div>
+      <div className="flex justify-between items-center text-xs font-mono text-cyan-400/60">
+        <span>vs DEALER {dealerUpCard}</span>
         <span>
-          True Count:{" "}
+          TRUE COUNT:{" "}
           {calculateTrueCount(runningCount, calculateRemainingDecks(deckState))}
         </span>
       </div>
