@@ -1,4 +1,11 @@
-import { COUNTING_SYSTEM_VALUES, COUNTING_SYSTEMS, CountingSystem } from "./types";
+import {
+  Action,
+  COUNTING_SYSTEM_VALUES,
+  COUNTING_SYSTEMS,
+  CountingSystem,
+  Card,
+  CardValueMap,
+} from "./types";
 
 // Add a variable to hold the current counting system
 let currentCountingSystem: CountingSystem = "Hi-Lo";
@@ -9,30 +16,36 @@ export const setCurrentCountingSystem = (system: CountingSystem) => {
 };
 
 export const getCardValue = (card: Card): number => {
+  console.log("Current Counting System:", currentCountingSystem);
   const systemInfo = COUNTING_SYSTEMS.find(
     (sys) => sys.name === currentCountingSystem
   );
+
   if (!systemInfo) {
-    // Fallback to Hi-Lo if system not found
-    return COUNTING_SYSTEM_VALUES["Hi-Lo"][card] || 0;
+    console.warn("Counting system not found, defaulting to Hi-Lo");
+    const value = COUNTING_SYSTEM_VALUES["Hi-Lo"][card];
+    console.log(`Hi-Lo fallback - Card: ${card}, Value: ${value}`);
+    return value || 0;
   }
-  return systemInfo.cardValues[card] || 0;
+
+  // Log the card values for the current system
+  console.log("System Card Values:", systemInfo.cardValues);
+
+  const cardValue = systemInfo.cardValues[card];
+  console.log(
+    "Card:",
+    card,
+    "Value:",
+    cardValue,
+    "System:",
+    currentCountingSystem,
+    "Card Values Map:",
+    systemInfo.cardValues
+  );
+
+  return cardValue || 0;
 };
 
-export type Card =
-  | "2"
-  | "3"
-  | "4"
-  | "5"
-  | "6"
-  | "7"
-  | "8"
-  | "9"
-  | "10"
-  | "J"
-  | "Q"
-  | "K"
-  | "A";
 export type HandTotal =
   | "8"
   | "9"
@@ -63,8 +76,6 @@ export type HandTotal =
   | "10,10"
   | "A,A";
 
-export type Action = "H" | "S" | "D" | "Ds" | "Y" | "N" | "Y/N";
-
 export const CARDS: Card[] = [
   "2",
   "3",
@@ -91,15 +102,24 @@ export const calculateTrueCount = (
   runningCount: number,
   remainingDecks: number
 ): number => {
+  console.log("Running Count:", runningCount);
+  console.log("Remaining Decks:", remainingDecks);
+
   if (remainingDecks === 0) return 0;
+
   const systemInfo = COUNTING_SYSTEMS.find(
     (sys) => sys.name === currentCountingSystem
   );
+
   if (!systemInfo || !isBalancedSystem(currentCountingSystem)) {
     // For unbalanced systems like KO, true count may not be used
     return runningCount;
   }
-  return Math.round((runningCount / remainingDecks) * 10) / 10;
+
+  const trueCount = Math.round((runningCount / remainingDecks) * 10) / 10;
+  console.log("Calculated True Count:", trueCount);
+
+  return trueCount;
 };
 
 export const calculateRemainingDecks = (
@@ -151,6 +171,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "9": {
     "2": "H",
@@ -166,6 +187,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "10": {
     "2": "D",
@@ -181,6 +203,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "11": {
     "2": "D",
@@ -196,6 +219,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "D",
     Q: "D",
     K: "D",
+    "?": "D",
   },
   "12": {
     "2": "H",
@@ -211,6 +235,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "13": {
     "2": "S",
@@ -226,6 +251,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "14": {
     "2": "S",
@@ -241,6 +267,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "15": {
     "2": "S",
@@ -256,6 +283,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "16": {
     "2": "S",
@@ -271,6 +299,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "17": {
     "2": "S",
@@ -286,6 +315,7 @@ export const HARD_TOTALS: Record<HardHandTotal, Record<Card, Action>> = {
     J: "S",
     Q: "S",
     K: "S",
+    "?": "S",
   },
 } as const;
 
@@ -314,6 +344,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,3": {
     "2": "H",
@@ -329,6 +360,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,4": {
     "2": "H",
@@ -344,6 +376,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,5": {
     "2": "H",
@@ -359,6 +392,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,6": {
     "2": "H",
@@ -374,6 +408,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,7": {
     "2": "Ds",
@@ -389,6 +424,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "H",
     Q: "H",
     K: "H",
+    "?": "H",
   },
   "A,8": {
     "2": "S",
@@ -404,6 +440,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "S",
     Q: "S",
     K: "S",
+    "?": "S",
   },
   "A,9": {
     "2": "S",
@@ -419,6 +456,7 @@ export const SOFT_TOTALS: Record<SoftHandTotal, Record<Card, Action>> = {
     J: "S",
     Q: "S",
     K: "S",
+    "?": "S",
   },
 } as const;
 
@@ -449,6 +487,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "3,3": {
     "2": "Y/N",
@@ -464,6 +503,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "4,4": {
     "2": "N",
@@ -479,6 +519,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "5,5": {
     "2": "N",
@@ -494,6 +535,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "6,6": {
     "2": "Y/N",
@@ -509,6 +551,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "7,7": {
     "2": "Y",
@@ -524,6 +567,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "8,8": {
     "2": "Y",
@@ -539,6 +583,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "Y",
     Q: "Y",
     K: "Y",
+    "?": "Y",
   },
   "9,9": {
     "2": "Y",
@@ -554,6 +599,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "10,10": {
     "2": "N",
@@ -569,6 +615,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "N",
     Q: "N",
     K: "N",
+    "?": "N",
   },
   "A,A": {
     "2": "Y",
@@ -584,6 +631,7 @@ export const PAIRS: Record<PairHandTotal, Record<Card, Action>> = {
     J: "Y",
     Q: "Y",
     K: "Y",
+    "?": "Y",
   },
 } as const;
 
@@ -601,64 +649,165 @@ export const getActionDescription = (action: Action): string => {
   );
 };
 
-export const getDeviationAction = (
-  playerHand: string,
-  dealerCard: string,
-  trueCount: number
-): Action | null => {
-  const handValue = playerHand; // Now playerHand is of type Card[]
-  const dealerValue = dealerCard; // Assume this function gets the value of the dealer's card
+// Add this type definition at the top of the file
+type DeviationKey =
+  | "16vs9"
+  | "16vs10"
+  | "15vs10"
+  | "13vs2"
+  | "12vs4"
+  | "12vs5"
+  | "12vs6"
+  | "11vsA"
+  | "10vs10"
+  | "9vs2"
+  | "Insurance";
 
-  switch (handValue) {
+type DeviationTable = {
+  [key in DeviationKey]?: number;
+};
+
+type SystemDeviations = {
+  [key in CountingSystem]: DeviationTable;
+};
+
+export const getDeviationAction = (
+  total: string,
+  dealerCard: string,
+  trueCount: number,
+  countingSystem: CountingSystem = "Hi-Lo"
+): Action | null => {
+  // Different systems have different deviation points
+  const deviations: SystemDeviations = {
+    "Hi-Lo": {
+      "16vs9": 5,
+      "16vs10": 0,
+      "15vs10": 4,
+      "13vs2": -1,
+      "12vs4": 0,
+      "12vs5": -1,
+      "12vs6": -1,
+      "11vsA": 1,
+      "10vs10": 4,
+      "9vs2": 1,
+      Insurance: 3,
+    },
+    "Hi-Opt I": {
+      "16vs9": 6,
+      "16vs10": 1,
+      "15vs10": 5,
+      "13vs2": 0,
+      "12vs4": 1,
+      "11vsA": 2,
+      Insurance: 4,
+    },
+    "Hi-Opt II": {
+      "16vs9": 4,
+      "16vs10": -1,
+      "15vs10": 3,
+      "13vs2": -2,
+      "12vs4": -1,
+      "11vsA": 0,
+      Insurance: 2,
+    },
+    "Zen Count": {
+      "16vs9": 4,
+      "16vs10": -1,
+      "15vs10": 3,
+      "13vs2": -2,
+      Insurance: 2,
+    },
+    "Omega II": {
+      "16vs9": 3,
+      "16vs10": -2,
+      "15vs10": 2,
+      Insurance: 1,
+    },
+    KO: {
+      "16vs9": 7,
+      "16vs10": 2,
+      "15vs10": 6,
+      Insurance: 4,
+    },
+  };
+
+  const systemDeviations = deviations[countingSystem] || deviations["Hi-Lo"];
+
+  // Check for deviations based on the selected counting system
+  switch (total) {
     case "Insurance":
-      if (dealerCard === "A" && trueCount >= 3) return "Y"; // Take Insurance
+      if (
+        dealerCard === "A" &&
+        systemDeviations.Insurance !== undefined &&
+        trueCount >= systemDeviations.Insurance
+      )
+        return "Y";
       break;
     case "16":
-      if (dealerValue === "9" && trueCount >= 5) return "S"; // Stand
-      if (dealerValue === "10" && trueCount >= 0) return "S"; // Stand
+      if (
+        dealerCard === "9" &&
+        systemDeviations["16vs9"] !== undefined &&
+        trueCount >= systemDeviations["16vs9"]
+      )
+        return "S";
+      if (
+        dealerCard === "10" &&
+        systemDeviations["16vs10"] !== undefined &&
+        trueCount >= systemDeviations["16vs10"]
+      )
+        return "S";
       break;
     case "15":
-      if (dealerValue === "10" && trueCount >= 4) return "S"; // Stand
+      if (
+        dealerCard === "10" &&
+        systemDeviations["15vs10"] !== undefined &&
+        trueCount >= systemDeviations["15vs10"]
+      )
+        return "S";
       break;
     case "13":
-      if (dealerValue === "2" && trueCount >= -1) return "S"; // Stand
-      if (dealerValue === "3" && trueCount >= -2) return "S"; // Stand
+      if (
+        dealerCard === "2" &&
+        systemDeviations["13vs2"] !== undefined &&
+        trueCount >= systemDeviations["13vs2"]
+      )
+        return "S";
       break;
     case "12":
-      if (dealerValue === "2" && trueCount >= 4) return "S"; // Stand
-      if (dealerValue === "3" && trueCount >= 2) return "S"; // Stand
-      if (dealerValue === "4" && trueCount >= 0) return "S"; // Stand
-      if (dealerValue === "5" && trueCount >= -1) return "H"; // Hit
-      if (dealerValue === "6" && trueCount >= -1) return "H"; // Hit
+      if (
+        dealerCard === "4" &&
+        systemDeviations["12vs4"] !== undefined &&
+        trueCount >= systemDeviations["12vs4"]
+      )
+        return "S";
       break;
     case "11":
-      if (dealerValue === "A" && trueCount >= 1) return "D"; // Double Down
+      if (
+        dealerCard === "A" &&
+        systemDeviations["11vsA"] !== undefined &&
+        trueCount >= systemDeviations["11vsA"]
+      )
+        return "D";
       break;
     case "10":
-      if (dealerValue === "10" && trueCount >= 4) return "D"; // Double Down
-      if (dealerValue === "A" && trueCount >= 4) return "D"; // Double Down
+      if (
+        dealerCard === "10" &&
+        systemDeviations["10vs10"] !== undefined &&
+        trueCount >= systemDeviations["10vs10"]
+      )
+        return "D";
       break;
     case "9":
-      if (dealerValue === "2" && trueCount >= 1) return "D"; // Double Down
-      if (dealerValue === "7" && trueCount >= 4) return "D"; // Double Down
+      if (
+        dealerCard === "2" &&
+        systemDeviations["9vs2"] !== undefined &&
+        trueCount >= systemDeviations["9vs2"]
+      )
+        return "D";
       break;
-    case "Pair of 10s":
-      if (dealerValue === "5" && trueCount >= 5) return "Y"; // Change 'P' to 'Y' for Split
-      if (dealerValue === "6" && trueCount >= 5) return "Y"; // Change 'P' to 'Y' for Split
-      break;
-    case "14":
-      if (dealerValue === "10" && trueCount >= 3) return "S"; // Surrender
-      break;
-    case "15":
-      if (dealerValue === "10" && trueCount >= 0) return "S"; // Surrender
-      if (dealerValue === "9" && trueCount >= 2) return "S"; // Surrender
-      if (dealerValue === "A" && trueCount >= 2) return "S"; // Surrender (assuming 'A' is represented as 1)
-      break;
-    default:
-      return null; // No deviation
   }
 
-  return null; // Default case if no rules matched
+  return null;
 };
 
 const parseHandValue = (hand: Card[]): number | string => {
@@ -702,6 +851,110 @@ export const getBettingUnits = (trueCount: number): number => {
 };
 
 export const isBalancedSystem = (system: CountingSystem): boolean => {
-  const balancedSystems = ["Hi-Lo", "Hi-Opt I", "Hi-Opt II", "Omega II", "Zen Count"];
+  const balancedSystems = [
+    "Hi-Lo",
+    "Hi-Opt I",
+    "Hi-Opt II",
+    "Omega II",
+    "Zen Count",
+  ];
   return balancedSystems.includes(system);
+};
+
+export const getBasicStrategy = (
+  playerCards: Card[],
+  dealerCard: Card,
+  trueCount: number,
+  countingSystem: CountingSystem = "Hi-Lo"
+): Action => {
+  console.log("Player Cards:", playerCards);
+  console.log("Dealer Card:", dealerCard);
+  console.log("True Count:", trueCount);
+  console.log("Counting System:", countingSystem);
+
+  // First, check if it's a pair
+  if (playerCards.length === 2 && playerCards[0] === playerCards[1]) {
+    const pairKey = `${playerCards[0]},${playerCards[1]}` as PairHandTotal;
+    console.log("Pair Key:", pairKey);
+    if (pairKey in PAIRS) {
+      console.log("Pair Action:", PAIRS[pairKey][dealerCard]);
+      return PAIRS[pairKey][dealerCard];
+    }
+  }
+
+  // Calculate total value and check for soft hands (hands with an Ace)
+  let total = 0;
+  let hasAce = false;
+  let softTotal = 0;
+
+  for (const card of playerCards) {
+    if (card === "A") {
+      hasAce = true;
+      total += 11;
+      softTotal += 1;
+    } else if (["K", "Q", "J"].includes(card)) {
+      total += 10;
+      softTotal += 10;
+    } else {
+      const value = parseInt(card);
+      total += value;
+      softTotal += value;
+    }
+  }
+
+  console.log("Total Value:", total);
+  console.log("Has Ace:", hasAce);
+
+  // Adjust for Aces
+  while (total > 21 && hasAce) {
+    total -= 10;
+    hasAce = false;
+  }
+
+  console.log("Adjusted Total Value:", total);
+
+  // Check for deviations first
+  const deviationAction = getDeviationAction(
+    total.toString(),
+    dealerCard,
+    trueCount,
+    countingSystem
+  );
+  console.log("Deviation Action:", deviationAction);
+
+  if (deviationAction) {
+    return deviationAction;
+  }
+
+  // Handle soft hands
+  if (hasAce && playerCards.length === 2) {
+    const softKey = `A,${
+      playerCards[0] === "A" ? playerCards[1] : playerCards[0]
+    }` as SoftHandTotal;
+    console.log("Soft Key:", softKey);
+    if (softKey in SOFT_TOTALS) {
+      console.log("Soft Action:", SOFT_TOTALS[softKey][dealerCard]);
+      return SOFT_TOTALS[softKey][dealerCard];
+    }
+  }
+
+  // Handle hard totals
+  if (total <= 8) {
+    console.log("Hard Action for 8:", HARD_TOTALS["8"][dealerCard]);
+    return HARD_TOTALS["8"][dealerCard];
+  } else if (total >= 17) {
+    console.log("Hard Action for 17:", HARD_TOTALS["17"][dealerCard]);
+    return HARD_TOTALS["17"][dealerCard];
+  } else {
+    const hardKey = total.toString() as HardHandTotal;
+    console.log("Hard Key:", hardKey);
+    if (hardKey in HARD_TOTALS) {
+      console.log("Hard Action:", HARD_TOTALS[hardKey][dealerCard]);
+      return HARD_TOTALS[hardKey][dealerCard];
+    }
+  }
+
+  // Default action if nothing else matches
+  console.log("Default Action: H");
+  return "H";
 };

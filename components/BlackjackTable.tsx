@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/lib/blackjack";
+import { useState, useEffect } from "react";
+import { Card } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ValueButton } from "@/components/ValueButton";
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getCardValue } from "@/lib/blackjack";
 
 interface BlackjackHand {
   id: number;
@@ -24,17 +25,30 @@ interface BlackjackHand {
 interface BlackjackTableProps {
   deckState: Record<Card, number>;
   onCardSelect: (card: Card) => void;
+  runningCount: number;
+  countingSystem: string;
   onComplete: (playerHands: BlackjackHand[], dealerHand: BlackjackHand) => void;
+  onRunningCountChange: (count: number) => void;
 }
 
 export function BlackjackTable({
   deckState,
   onCardSelect,
+  runningCount,
+  countingSystem,
   onComplete,
+  onRunningCountChange,
 }: BlackjackTableProps) {
-  const [numberOfHands, setNumberOfHands] = useState<number>(0);
+  const [numberOfHands, setNumberOfHands] = useState<number>(1);
   const [selectedHandIndexes, setSelectedHandIndexes] = useState<number[]>([]);
-  const [hands, setHands] = useState<BlackjackHand[]>([]);
+  const [hands, setHands] = useState<BlackjackHand[]>([
+    {
+      id: 0,
+      cards: [],
+      isPlayer: true,
+      isYourHand: false,
+    },
+  ]);
   const [dealerHand, setDealerHand] = useState<BlackjackHand>({
     id: -1,
     cards: [],
@@ -72,45 +86,68 @@ export function BlackjackTable({
     );
   };
 
-  const handleCardSelect = (card: Card) => {
+  const handleCardSelect = async (card: Card) => {
     if (activeHandIndex === null) return;
 
     if (activeHandIndex === -1) {
       // Dealer hand
-      if (dealerHand.cards.length < 1) {
-        // Add the visible card
+      if (dealerHand.cards.length === 0) {
+        // Add the visible card and hidden card in one update
         setDealerHand((prev) => ({
           ...prev,
-          cards: [...prev.cards, card],
+          cards: [...prev.cards, card, "?" as Card],
         }));
         onCardSelect(card);
-
-        // Automatically add the hidden card (represented as "?")
-        setDealerHand((prev) => ({
-          ...prev,
-          cards: [...prev.cards, "?" as Card],
-        }));
+        // Update running count only for the visible card
+        const cardValue = getCardValue(card);
+        console.log(
+          `Adding dealer card ${card} with value ${cardValue} to count`
+        );
+        onRunningCountChange(runningCount + cardValue);
       }
     } else {
       // Player hand
       const hand = hands[activeHandIndex];
       if (hand && hand.cards.length < 2) {
-        setHands((prev) =>
-          prev.map((h) =>
-            h.id === activeHandIndex ? { ...h, cards: [...h.cards, card] } : h
-          )
-        );
+        await new Promise<void>((resolve) => {
+          setHands((prev) =>
+            prev.map((h) =>
+              h.id === activeHandIndex ? { ...h, cards: [...h.cards, card] } : h
+            )
+          );
+          resolve();
+        });
         onCardSelect(card);
+        // Update running count for player card
+        const cardValue = getCardValue(card);
+        console.log(
+          `Adding player card ${card} with value ${cardValue} to count`
+        );
+        onRunningCountChange(runningCount + cardValue);
       }
     }
   };
 
+  // Add a useEffect to check setup completion after state updates
+  useEffect(() => {
+    // For debugging
+  }, [hands, dealerHand]);
+
   const isSetupComplete = () => {
-    if (selectedHandIndexes.length === 0) return false;
-    if (dealerHand.cards.length !== 2) return false;
-    return hands.every((hand) =>
-      hand.isPlayer ? hand.cards.length === 2 : true
-    );
+    // Check if at least one hand is selected as "your hand"
+    const hasSelectedHand = hands.some((hand) => hand.isYourHand);
+
+    // Check if dealer has exactly 2 cards (one up card and one down card)
+    const dealerComplete = dealerHand.cards.length === 2;
+
+    // Check if all hands have exactly 2 cards
+    const allHandsComplete = hands.every((hand) => {
+      // For debugging
+      return hand.cards.length === 2;
+    });
+
+    // All conditions must be met
+    return hasSelectedHand && dealerComplete && allHandsComplete;
   };
 
   const getCardColor = (card: Card) => {
@@ -123,18 +160,82 @@ export function BlackjackTable({
     return "bg-zinc-500/20 hover:bg-zinc-500/30 text-zinc-200 border-zinc-200/50 dark:bg-zinc-400/25 dark:hover:bg-zinc-400/35 dark:text-zinc-200";
   };
 
-  const renderCard = (card: Card, isHidden: boolean = false) => (
-    <Badge
-      variant="outline"
-      className={cn(
-        "h-10 w-8 flex items-center justify-center text-lg font-medium border transition-colors",
-        isHidden
-          ? "bg-primary/25 border-primary-foreground/30 dark:bg-primary/30 text-primary-foreground"
-          : getCardColor(card)
+  // Add function to handle card deletion
+  const handleCardDelete = (handId: number, cardIndex: number) => {
+    if (handId === -1) {
+      // Dealer hand
+      const deletedCard = dealerHand.cards[cardIndex];
+      if (deletedCard !== "?") {
+        // Return card to deck
+        onCardSelect(deletedCard);
+        // Remove from running count
+        const cardValue = getCardValue(deletedCard);
+        console.log(
+          `Removing dealer card ${deletedCard} with value ${cardValue} from count`
+        );
+        onRunningCountChange(runningCount - cardValue);
+      }
+      setDealerHand((prev) => ({
+        ...prev,
+        cards: prev.cards.filter((_, i) => i !== cardIndex),
+      }));
+    } else {
+      // Player hand
+      const hand = hands.find((h) => h.id === handId);
+      if (hand) {
+        const deletedCard = hand.cards[cardIndex];
+        // Return card to deck
+        onCardSelect(deletedCard);
+        // Remove from running count
+        const cardValue = getCardValue(deletedCard);
+        console.log(
+          `Removing player card ${deletedCard} with value ${cardValue} from count`
+        );
+        onRunningCountChange(runningCount - cardValue);
+        setHands((prev) =>
+          prev.map((h) =>
+            h.id === handId
+              ? { ...h, cards: h.cards.filter((_, i) => i !== cardIndex) }
+              : h
+          )
+        );
+      }
+    }
+  };
+
+  // Update renderCard function to include delete button
+  const renderCard = (
+    card: Card,
+    isHidden: boolean = false,
+    handId: number,
+    cardIndex: number
+  ) => (
+    <div className="relative group">
+      <Badge
+        variant="outline"
+        className={cn(
+          "h-10 w-8 flex items-center justify-center text-lg font-medium border transition-colors",
+          isHidden
+            ? "bg-primary/25 border-primary-foreground/30 dark:bg-primary/30 text-primary-foreground"
+            : getCardColor(card)
+        )}
+      >
+        {isHidden ? "?" : card}
+      </Badge>
+      {!isHidden && (
+        <Button
+          variant="destructive"
+          size="icon"
+          className="absolute -top-2 -right-2 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCardDelete(handId, cardIndex);
+          }}
+        >
+          <span className="text-[10px]">×</span>
+        </Button>
       )}
-    >
-      {isHidden ? "?" : card}
-    </Badge>
+    </div>
   );
 
   return (
@@ -145,10 +246,13 @@ export function BlackjackTable({
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Number of Hands</label>
+          <label className="text-sm font-medium text-white">
+            Number of Hands
+          </label>
           <Select
             value={numberOfHands.toString()}
             onValueChange={handleNumberOfHandsChange}
+            defaultValue="1"
           >
             <SelectTrigger className="w-full bg-background/80 border-border text-white">
               <SelectValue placeholder="Select number of hands" />
@@ -206,8 +310,10 @@ export function BlackjackTable({
                 )}
                 onClick={() => setActiveHandIndex(-1)}
               >
-                {dealerHand.cards.map((card, i) => renderCard(card, i === 1))}
-                {dealerHand.cards.length === 0 && (
+                {dealerHand.cards.map((card, i) =>
+                  renderCard(card, i === 1, -1, i)
+                )}
+                {dealerHand.cards.length < 2 && (
                   <Button
                     variant="ghost"
                     onClick={() => setActiveHandIndex(-1)}
@@ -225,7 +331,7 @@ export function BlackjackTable({
             <div className="space-y-2">
               <label className="text-sm font-medium">All Hands</label>
               <div className="space-y-3">
-                {hands.map((hand) => (
+                {hands.map((hand, index) => (
                   <div
                     key={hand.id}
                     className={cn(
@@ -252,7 +358,9 @@ export function BlackjackTable({
                         </Badge>
                       )}
                     </div>
-                    {hand.cards.map((card) => renderCard(card))}
+                    {hand.cards.map((card, cardIndex) =>
+                      renderCard(card, false, hand.id, cardIndex)
+                    )}
                     {hand.cards.length < 2 && (
                       <Button
                         variant="ghost"
@@ -303,7 +411,7 @@ export function BlackjackTable({
             )}
 
             <Button
-              className="w-full bg-primary/90 hover:bg-primary text-white"
+              className="w-full bg-primary/90 hover:bg-primary text-black"
               disabled={!isSetupComplete()}
               onClick={() => {
                 const playerHands = hands.map((h) => ({

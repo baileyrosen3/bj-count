@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Card as CardType,
   CARDS,
   getCardValue,
   calculateTrueCount,
@@ -11,6 +10,7 @@ import {
   calculateRemainingDecks,
   setCurrentCountingSystem,
 } from "@/lib/blackjack";
+import { Card as CardType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { DeckStatistics } from "@/components/DeckStatistics";
 import { StrategyChart } from "@/components/StrategyChart";
@@ -22,6 +22,7 @@ import { BankrollStats } from "@/components/BankrollStats";
 import { BettingControls } from "@/components/BettingControls";
 import { CountingSystem } from "@/lib/types";
 import { BlackjackTable } from "@/components/BlackjackTable";
+import { PlayingTable } from "@/components/PlayingTable";
 
 interface GameStats {
   handsPlayed: number;
@@ -32,6 +33,18 @@ interface GameStats {
   biggestLoss: number;
   peakBankroll: number;
 }
+
+interface PlayingHand {
+  id: number;
+  cards: CardType[];
+  isYourHand: boolean;
+  bet: number;
+  isDoubled: boolean;
+  isSplit: boolean;
+  isComplete: boolean;
+}
+
+type GamePhase = "setup" | "playing" | "complete";
 
 export default function Home() {
   const [isGameStarted, setIsGameStarted] = useState(false);
@@ -55,8 +68,10 @@ export default function Home() {
     biggestLoss: 0,
     peakBankroll: 0,
   });
-  const [gamePhase, setGamePhase] = useState<"setup" | "playing" | "complete">(
-    "setup"
+  const [gamePhase, setGamePhase] = useState<GamePhase>("setup");
+  const [playerHands, setPlayerHands] = useState<PlayingHand[]>([]);
+  const [dealerHand, setDealerHand] = useState<{ cards: CardType[] } | null>(
+    null
   );
 
   const handleGameStart = (
@@ -88,6 +103,20 @@ export default function Home() {
     setDeckState(null);
     setRunningCount(0);
     setSelectedDealerCard(null);
+    setGamePhase("setup");
+    setPlayerHands([]);
+    setDealerHand(null);
+    setBankroll(0);
+    setMinBet(0);
+    setGameStats({
+      handsPlayed: 0,
+      handsWon: 0,
+      totalWinnings: 0,
+      totalLosses: 0,
+      biggestWin: 0,
+      biggestLoss: 0,
+      peakBankroll: 0,
+    });
   };
 
   const handleCardClick = (card: CardType) => {
@@ -132,6 +161,14 @@ export default function Home() {
       biggestLoss: !isWin ? Math.max(prev.biggestLoss, bet) : prev.biggestLoss,
       peakBankroll: Math.max(prev.peakBankroll, newBankroll),
     }));
+  };
+
+  const handleRunningCountChange = (newCount: number) => {
+    setRunningCount(newCount);
+  };
+
+  const handleAllHandsComplete = () => {
+    setGamePhase("setup");
   };
 
   if (!isGameStarted || !deckState) {
@@ -237,11 +274,61 @@ export default function Home() {
                 };
               });
             }}
+            runningCount={runningCount}
+            countingSystem={countingSystem}
+            onRunningCountChange={handleRunningCountChange}
             onComplete={(playerHands, dealerHand) => {
-              // Handle completed setup
+              // Convert BlackjackHands to PlayingHands
+              const playingHands = playerHands.map((hand) => ({
+                id: hand.id,
+                cards: hand.cards,
+                isYourHand: hand.isYourHand,
+                bet: 25, // Default bet amount - you might want to make this configurable
+                isDoubled: false,
+                isSplit: false,
+                isComplete: false,
+              }));
+
+              setPlayerHands(playingHands);
+              setDealerHand(dealerHand);
               setGamePhase("playing");
             }}
           />
+        )}
+
+        {gamePhase === "playing" && dealerHand && (
+          <PlayingTable
+            key={`playing-table-${gamePhase}`}
+            initialHands={playerHands}
+            dealerUpCard={dealerHand.cards[0]}
+            deckState={deckState}
+            runningCount={runningCount}
+            countingSystem={countingSystem}
+            onRunningCountChange={handleRunningCountChange}
+            onCardSelect={(card) => {
+              setDeckState((prev) => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  [card]: prev[card] - 1,
+                };
+              });
+            }}
+            onHandComplete={(hand) => {
+              const isWin = hand.isComplete;
+              handleHandResult(hand.bet, isWin);
+            }}
+            onAllHandsComplete={handleAllHandsComplete}
+          />
+        )}
+
+        {gamePhase === "complete" && (
+          <Button
+            onClick={handleReset}
+            className="w-full bg-primary text-white hover:bg-primary/90"
+          >
+            Start New Game
+          </Button>
         )}
       </div>
     </main>

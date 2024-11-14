@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, calculateRemainingDecks, calculateTrueCount } from "@/lib/blackjack";
+import { calculateRemainingDecks, calculateTrueCount } from "@/lib/blackjack";
 import {
   Card as UICard,
   CardContent,
@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Card } from "@/lib/types";
 
 interface DeckStatisticsProps {
   deckState: Record<Card, number>;
@@ -24,7 +25,8 @@ export function DeckStatistics({
   const trueCount = calculateTrueCount(runningCount, remainingDecks);
   const totalCards = Object.values(deckState).reduce((a, b) => a + b, 0);
 
-  const getProgressValue = (count: number) => (count / (numberOfDecks * 4)) * 100;
+  const getProgressValue = (count: number) =>
+    (count / (numberOfDecks * 4)) * 100;
 
   return (
     <UICard className="w-full">

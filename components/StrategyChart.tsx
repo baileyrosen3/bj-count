@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Card } from "@/lib/types";
 import {
-  Card,
-  Action,
   HARD_TOTALS,
   SOFT_TOTALS,
   PAIRS,
@@ -189,12 +188,6 @@ export function StrategyChart({
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-muted-foreground">
               True Count
-            </div>
-            <div className="text-lg font-semibold">
-              {calculateTrueCount(
-                runningCount,
-                calculateRemainingDecks(deckState)
-              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,10 @@
-export type CountingSystem = "Hi-Lo" | "KO" | "Hi-Opt II" | "Omega II";
+export type CountingSystem =
+  | "Hi-Lo"
+  | "Hi-Opt I"
+  | "Hi-Opt II"
+  | "Omega II"
+  | "Zen Count"
+  | "KO";
 export type Card =
   | "2"
   | "3"
@@ -12,8 +18,10 @@ export type Card =
   | "J"
   | "Q"
   | "K"
-  | "A";
+  | "A"
+  | "?";
 export type CardValueMap = Record<Card, number>;
+export type Action = "H" | "S" | "D" | "Ds" | "Y" | "N" | "Y/N";
 
 export const COUNTING_SYSTEM_VALUES: Record<CountingSystem, CardValueMap> = {
   "Hi-Lo": {
@@ -30,24 +38,10 @@ export const COUNTING_SYSTEM_VALUES: Record<CountingSystem, CardValueMap> = {
     Q: -1,
     K: -1,
     A: -1,
+    "?": 0,
   },
-  "Hi-Opt II": {
-    "2": 1,
-    "3": 1,
-    "4": 2,
-    "5": 2,
-    "6": 2,
-    "7": 0,
-    "8": 0,
-    "9": 0,
-    "10": -2,
-    J: -2,
-    Q: -2,
-    K: -2,
-    A: -2,
-  },
-  KO: {
-    "2": 1,
+  "Hi-Opt I": {
+    "2": 0,
     "3": 1,
     "4": 1,
     "5": 1,
@@ -59,7 +53,40 @@ export const COUNTING_SYSTEM_VALUES: Record<CountingSystem, CardValueMap> = {
     J: -1,
     Q: -1,
     K: -1,
+    A: 0,
+    "?": 0,
+  },
+  "Hi-Opt II": {
+    "2": 1,
+    "3": 1,
+    "4": 2,
+    "5": 2,
+    "6": 1,
+    "7": 1,
+    "8": 0,
+    "9": 0,
+    "10": -2,
+    J: -2,
+    Q: -2,
+    K: -2,
+    A: 0,
+    "?": 0,
+  },
+  KO: {
+    "2": 1,
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1,
+    "7": 1,
+    "8": 0,
+    "9": 0,
+    "10": -1,
+    J: -1,
+    Q: -1,
+    K: -1,
     A: -1,
+    "?": 0,
   },
   "Omega II": {
     "2": 1,
@@ -74,7 +101,24 @@ export const COUNTING_SYSTEM_VALUES: Record<CountingSystem, CardValueMap> = {
     J: -2,
     Q: -2,
     K: -2,
-    A: -2,
+    A: 0,
+    "?": 0,
+  },
+  "Zen Count": {
+    "2": 1,
+    "3": 1,
+    "4": 2,
+    "5": 2,
+    "6": 2,
+    "7": 1,
+    "8": 0,
+    "9": 0,
+    "10": -2,
+    J: -2,
+    Q: -2,
+    K: -2,
+    A: -1,
+    "?": 0,
   },
 };
 
