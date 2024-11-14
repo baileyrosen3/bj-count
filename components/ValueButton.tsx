@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/lib/blackjack";
+import { Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ValueButtonProps {
