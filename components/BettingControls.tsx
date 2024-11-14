@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 
@@ -9,7 +9,7 @@ interface BettingControlsProps {
   onHandResult: (bet: number, isWin: boolean) => void;
 }
 
-export function BettingControls({
+export default function BettingControls({
   bankroll,
   minBet,
   onHandResult,

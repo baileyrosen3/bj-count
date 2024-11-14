@@ -1,5 +1,5 @@
-import { Card } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "../lib/types";
+import { Badge } from "../components/ui/badge";
 import {
   getActionDescription,
   getDeviationAction,
@@ -9,8 +9,8 @@ import {
   SOFT_TOTALS,
   PAIRS,
   getBasicStrategy,
-} from "@/lib/blackjack";
-import { CountingSystem } from "@/lib/types";
+} from "../lib/blackjack";
+import { CountingSystem } from "../lib/types";
 
 interface StrategyAdviceProps {
   dealerUpCard: Card;
@@ -20,7 +20,7 @@ interface StrategyAdviceProps {
   countingSystem: CountingSystem;
 }
 
-export function StrategyAdvice({
+export default function StrategyAdvice({
   dealerUpCard,
   playerCards,
   deckState,

@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "../lib/types";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "../components/ui/select";
+import { cn } from "../lib/utils";
 import {
   calculateRemainingDecks,
   calculateTrueCount,
   getCardValue,
-} from "@/lib/blackjack";
+} from "../lib/blackjack";
 
-interface BlackjackHand {
+export interface BlackjackHand {
   id: number;
   cards: Card[];
   isPlayer: boolean;
@@ -39,7 +39,7 @@ interface BlackjackTableProps {
   bankroll: number;
 }
 
-export function BlackjackTable({
+export default function BlackjackTable({
   deckState,
   onCardSelect,
   onCardRemove,

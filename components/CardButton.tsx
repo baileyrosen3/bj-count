@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { Button } from "../components/ui/button";
+import { Card } from "../lib/types";
+import { cn } from "../lib/utils";
 
 interface CardButtonProps {
   card: Card;
@@ -10,7 +10,11 @@ interface CardButtonProps {
   disabled?: boolean;
 }
 
-export function CardButton({ card, onClick, disabled }: CardButtonProps) {
+export default function CardButton({
+  card,
+  onClick,
+  disabled,
+}: CardButtonProps) {
   return (
     <Button
       variant="outline"

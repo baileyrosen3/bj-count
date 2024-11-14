@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Card } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Card } from "../lib/types";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../lib/utils";
 
 interface DealerPlayProps {
   upCard: Card;
@@ -11,12 +11,16 @@ interface DealerPlayProps {
   onComplete: (finalCards: Card[]) => void;
 }
 
-export function DealerPlay({
+export default function DealerPlay({
   upCard,
   deckState,
   onCardSelect,
   onComplete,
 }: DealerPlayProps) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const [dealerCards, setDealerCards] = useState<Card[]>([upCard]);
   const [showingDownCard, setShowingDownCard] = useState(true);
 

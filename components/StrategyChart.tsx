@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/lib/types";
+import { Card } from "../lib/types";
 import {
   HARD_TOTALS,
   SOFT_TOTALS,
@@ -11,14 +11,14 @@ import {
   getDeviationAction,
   calculateTrueCount,
   calculateRemainingDecks,
-} from "@/lib/blackjack";
-import { Card as UICard, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils";
-import { CountingSystem } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+} from "../lib/blackjack";
+import { Card as UICard, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
+import { cn } from "../lib/utils";
+import { CountingSystem } from "../lib/types";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
 
 type GameState = "dealing" | "in-progress" | "ended";
 type HandResult = "win" | "lose" | "push" | "blackjack" | null;
@@ -42,7 +42,7 @@ interface StrategyChartProps {
   onHandResult: (bet: number, isWin: boolean) => void;
 }
 
-export function StrategyChart({
+export default function StrategyChart({
   dealerCard,
   onDealerCardSelect,
   onCountUpdate,
@@ -187,7 +187,7 @@ export function StrategyChart({
             <ToggleGroup
               type="single"
               value={handType}
-              onValueChange={(value) => value && setHandType(value as any)}
+              onValueChange={(value: any) => value && setHandType(value as any)}
               className="justify-start bg-black/30 p-1 rounded-lg border border-cyan-500/20"
             >
               {["hard", "soft", "pair"].map((type) => (

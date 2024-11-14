@@ -1,15 +1,15 @@
 "use client";
 
-import { calculateRemainingDecks, calculateTrueCount } from "@/lib/blackjack";
+import { calculateRemainingDecks, calculateTrueCount } from "../lib/blackjack";
 import {
   Card as UICard,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Card } from "@/lib/types";
-import { cn } from "@/lib/utils";
+} from "../components/ui/card";
+import { Progress } from "../components/ui/progress";
+import { Card } from "../lib/types";
+import { cn } from "../lib/utils";
 
 interface DeckStatisticsProps {
   deckState: Record<Card, number>;
@@ -17,7 +17,7 @@ interface DeckStatisticsProps {
   numberOfDecks: number;
 }
 
-export function DeckStatistics({
+export default function DeckStatistics({
   deckState,
   runningCount,
   numberOfDecks,
@@ -33,7 +33,7 @@ export function DeckStatistics({
     <UICard className="w-full bg-black/40 border-cyan-500/30 shadow-neon">
       <CardHeader>
         <CardTitle className="text-xl font-mono text-cyan-300 tracking-wide">
-          SYSTEM STATISTICS
+          DECK STATISTICS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

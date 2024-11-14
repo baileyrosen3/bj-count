@@ -1,19 +1,19 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Slider } from "../components/ui/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { CountingSystem, COUNTING_SYSTEMS } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+} from "../components/ui/select";
+import { CountingSystem, COUNTING_SYSTEMS } from "../lib/types";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../lib/utils";
 
 interface SetupScreenProps {
   onStart: (
@@ -24,7 +24,7 @@ interface SetupScreenProps {
   ) => void;
 }
 
-export function SetupScreen({ onStart }: SetupScreenProps) {
+export default function SetupScreen({ onStart }: SetupScreenProps) {
   const [numberOfDecks, setNumberOfDecks] = useState(6);
   const [bankroll, setBankroll] = useState(1000);
   const [unitSize, setUnitSize] = useState(25);

@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { StrategyAdvice } from "@/components/StrategyAdvice";
-import { CountingSystem } from "@/lib/types";
+import { Card } from "../lib/types";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../lib/utils";
+import StrategyAdvice from "../components/StrategyAdvice";
+import { CountingSystem } from "../lib/types";
 import {
   calculateTrueCount,
   calculateRemainingDecks,
   getCardValue,
-} from "@/lib/blackjack";
-import { DealerPlay } from "@/components/DealerPlay";
+} from "../lib/blackjack";
+import DealerPlay from "../components/DealerPlay";
 
 interface PlayingHand {
   id: number;
@@ -64,7 +64,7 @@ interface TableStats {
   longestLoseStreak: number;
 }
 
-export function PlayingTable({
+export default function PlayingTable({
   initialHands,
   dealerUpCard,
   deckState,

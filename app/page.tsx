@@ -9,20 +9,17 @@ import {
   getBettingUnits,
   calculateRemainingDecks,
   setCurrentCountingSystem,
-} from "@/lib/blackjack";
-import { Card as CardType } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { DeckStatistics } from "@/components/DeckStatistics";
-import { StrategyChart } from "@/components/StrategyChart";
-import { RefreshCw, Plus, Minus } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SetupScreen } from "@/components/SetupScreen";
-import { BankrollStats } from "@/components/BankrollStats";
-import { BettingControls } from "@/components/BettingControls";
-import { CountingSystem } from "@/lib/types";
-import { BlackjackTable } from "@/components/BlackjackTable";
-import { PlayingTable } from "@/components/PlayingTable";
-import { cn } from "@/lib/utils";
+} from "../lib/blackjack";
+import { Card as CardType } from "../lib/types";
+import { Button } from "../components/ui/button";
+import DeckStatistics from "../components/DeckStatistics";
+import { RefreshCw } from "lucide-react";
+import SetupScreen from "../components/SetupScreen";
+import BankrollStats from "../components/BankrollStats";
+import { CountingSystem } from "../lib/types";
+import BlackjackTable, { BlackjackHand } from "../components/BlackjackTable";
+import PlayingTable from "../components/PlayingTable";
+import { cn } from "../lib/utils";
 
 interface GameStats {
   handsPlayed: number;
@@ -171,6 +168,14 @@ export default function Home() {
     setGamePhase("setup");
   };
 
+  const handleDeckReset = () => {
+    setDeckState(initialDeckState(numberOfDecks));
+    setRunningCount(0);
+    setGamePhase("setup");
+    setPlayerHands([]);
+    setDealerHand(null);
+  };
+
   if (!isGameStarted || !deckState) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-purple-950 flex flex-col items-center justify-center dark relative">
@@ -192,27 +197,52 @@ export default function Home() {
       <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
       <div className="absolute inset-0 pointer-events-none scanlines opacity-10" />
 
+      {isGameStarted && deckState && (
+        <div className="fixed top-4 right-4 flex gap-2 z-20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeckReset}
+            className="h-9 border-cyan-500/30 bg-black/50 hover:bg-cyan-500/20 font-mono text-cyan-300"
+            title="Reset Deck"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            RESET DECK
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            className="h-9 border-pink-500/30 bg-black/50 hover:bg-pink-500/20 font-mono text-pink-300"
+            title="Reset System"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            RESET SYSTEM
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col w-full max-w-md space-y-6 relative z-10">
         {/* Game Phase Content */}
         {gamePhase === "setup" && (
           <div className="bg-black/40 border border-cyan-500/30 rounded-xl shadow-neon backdrop-blur-sm">
             <BlackjackTable
               deckState={deckState}
-              onCardSelect={(card) => {
+              onCardSelect={(card: string | number) => {
                 setDeckState((prev) => {
                   if (!prev) return null;
                   return {
                     ...prev,
-                    [card]: prev[card] - 1,
+                    [card as CardType]: prev[card as CardType] - 1,
                   };
                 });
               }}
-              onCardRemove={(card) => {
+              onCardRemove={(card: string | number) => {
                 setDeckState((prev) => {
                   if (!prev) return null;
                   return {
                     ...prev,
-                    [card]: prev[card] + 1,
+                    [card as CardType]: prev[card as CardType] + 1,
                   };
                 });
               }}
@@ -221,7 +251,10 @@ export default function Home() {
               onRunningCountChange={handleRunningCountChange}
               minBet={minBet}
               bankroll={bankroll}
-              onComplete={(playerHands, dealerHand) => {
+              onComplete={(
+                playerHands: BlackjackHand[],
+                dealerHand: BlackjackHand
+              ) => {
                 const playingHands = playerHands.map((hand) => ({
                   id: hand.id,
                   cards: hand.cards,
@@ -250,16 +283,16 @@ export default function Home() {
               runningCount={runningCount}
               countingSystem={countingSystem}
               onRunningCountChange={handleRunningCountChange}
-              onCardSelect={(card) => {
+              onCardSelect={(card: string | number) => {
                 setDeckState((prev) => {
                   if (!prev) return null;
                   return {
                     ...prev,
-                    [card]: prev[card] - 1,
+                    [card as CardType]: prev[card as CardType] - 1,
                   };
                 });
               }}
-              onHandComplete={(hand) => {
+              onHandComplete={(hand: PlayingHand) => {
                 const isWin = hand.isComplete;
                 handleHandResult(hand.bet, isWin);
               }}
@@ -283,14 +316,6 @@ export default function Home() {
         )}
 
         <div className="space-y-6">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleReset}
-            className="h-9 w-9 border-cyan-500/30 bg-black/50 hover:bg-cyan-500/20"
-          >
-            <RefreshCw className="h-4 w-4 text-cyan-300" />
-          </Button>
           <BankrollStats bankroll={bankroll} stats={gameStats} />
           <DeckStatistics
             deckState={deckState}

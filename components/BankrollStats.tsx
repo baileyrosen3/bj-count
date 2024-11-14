@@ -1,4 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 interface BankrollStatsProps {
   bankroll: number;
@@ -15,7 +20,7 @@ interface GameStats {
   peakBankroll: number;
 }
 
-export function BankrollStats({ bankroll, stats }: BankrollStatsProps) {
+export default function BankrollStats({ bankroll, stats }: BankrollStatsProps) {
   const winRate =
     stats.handsPlayed > 0
       ? ((stats.handsWon / stats.handsPlayed) * 100).toFixed(1)
