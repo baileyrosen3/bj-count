@@ -67,6 +67,31 @@ interface TableStats {
   longestLoseStreak: number;
 }
 
+// Add this helper function near the top of the file
+const calculateDealerWinProbability = (
+  dealerUpCard: Card,
+  playerTotal: number
+): number => {
+  // Basic probability calculation
+  const dealerValue = ["10", "J", "Q", "K"].includes(dealerUpCard)
+    ? 10
+    : dealerUpCard === "A"
+    ? 11
+    : parseInt(dealerUpCard);
+
+  // If player has busted, dealer wins 100%
+  if (playerTotal > 21) return 100;
+
+  // If dealer has blackjack potential (A showing)
+  if (dealerUpCard === "A") return 35;
+
+  // If dealer has 10-value showing
+  if (dealerValue === 10) return 30;
+
+  // For other dealer upcards, rough probability based on card value
+  return Math.max(0, Math.min(100, (dealerValue / playerTotal) * 25));
+};
+
 export default function PlayingTable({
   initialHands,
   dealerUpCard,
@@ -459,7 +484,7 @@ export default function PlayingTable({
                       {hand.result.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2">
                     <div className="flex gap-2">
                       {hand.cards.map((card, i) => (
                         <Badge
@@ -655,9 +680,20 @@ export default function PlayingTable({
           <div className="space-y-4">
             {/* Dealer's Hand */}
             <div className="space-y-2">
-              <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
-                Dealer Protocol
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+                  Dealer Protocol
+                </label>
+                {!showDealerPlay && hands[activeHandIndex] && (
+                  <span className="text-sm font-mono text-cyan-400">
+                    {calculateDealerWinProbability(
+                      dealerHand.cards[0],
+                      calculateTotal(hands[activeHandIndex].cards)
+                    ).toFixed(0)}
+                    % chance to beat your hand
+                  </span>
+                )}
+              </div>
               <div className="flex justify-between items-center h-16 bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
                 <div className="flex gap-2">
                   {dealerHand.cards.map((card, i) => (
