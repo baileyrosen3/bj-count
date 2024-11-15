@@ -108,19 +108,14 @@ export default function BlackjackTable({
     if (activeHandIndex === -1) {
       // Dealer hand
       if (dealerHand.cards.length === 0) {
-        // Add the visible card and hidden card in one update
         setDealerHand((prev) => ({
           ...prev,
           cards: [...prev.cards, card, "?" as Card],
         }));
         onCardSelect(card);
-        // Update running count only for the visible card
         const cardValue = getCardValue(card);
-        console.log(
-          `Adding dealer card ${card} with value ${cardValue} to count`
-        );
         onRunningCountChange(runningCount + cardValue);
-        // Automatically move to first player hand after dealer cards are set
+        // Move to first player hand after dealer's cards
         setActiveHandIndex(0);
       }
     } else {
@@ -136,30 +131,40 @@ export default function BlackjackTable({
           resolve();
         });
         onCardSelect(card);
-        // Update running count for player card
         const cardValue = getCardValue(card);
-        console.log(
-          `Adding player card ${card} with value ${cardValue} to count`
-        );
         onRunningCountChange(runningCount + cardValue);
 
-        // If this was the second card, move to next hand
-        if (hand.cards.length === 1) {
-          // Find next hand that needs cards
-          const nextHandIndex = hands.findIndex(
-            (h, idx) => idx > activeHandIndex && h.cards.length < 2
-          );
-          if (nextHandIndex !== -1) {
-            setActiveHandIndex(nextHandIndex);
-          } else if (!dealerHand.cards.length) {
-            // If no more player hands need cards, move to dealer if dealer hasn't been dealt
-            setActiveHandIndex(-1);
-          }
-        }
+        // Find next hand that needs cards
+        const nextHandIndex = findNextIncompleteHand(activeHandIndex);
+        setActiveHandIndex(nextHandIndex);
       }
     }
-    // Hide card selection after adding a card
     setIsSelectingCard(false);
+  };
+
+  // Add this helper function to find the next hand that needs cards
+  const findNextIncompleteHand = (currentIndex: number): number => {
+    // First try to find next player hand that needs cards
+    for (let i = currentIndex + 1; i < hands.length; i++) {
+      if (hands[i].cards.length < 2) {
+        return i;
+      }
+    }
+
+    // If we've finished all player hands, go to dealer if it needs cards
+    if (dealerHand.cards.length < 1) {
+      return -1;
+    }
+
+    // After dealer, start back at first player hand that needs cards
+    for (let i = 0; i < hands.length; i++) {
+      if (hands[i].cards.length < 2) {
+        return i;
+      }
+    }
+
+    // If all hands are complete, return current index
+    return currentIndex;
   };
 
   // Add a useEffect to check setup completion after state updates
