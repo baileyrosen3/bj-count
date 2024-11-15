@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Card } from "../lib/types";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
 
 interface DealerPlayProps {
@@ -19,28 +19,7 @@ export default function DealerPlay({
   onCardSelect,
   onComplete,
 }: DealerPlayProps) {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const [dealerCards, setDealerCards] = useState<Card[]>([upCard]);
-  const [showingDownCard, setShowingDownCard] = useState(true);
-
-  const getCardColor = (card: Card) => {
-    if (["2", "3", "4", "5", "6"].includes(card)) {
-      return "bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-200/50 dark:bg-blue-400/25 dark:hover:bg-blue-400/35 dark:text-blue-200";
-    }
-    if (["10", "J", "Q", "K", "A"].includes(card)) {
-      return "bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-200/50 dark:bg-red-400/25 dark:hover:bg-red-400/35 dark:text-red-200";
-    }
-    return "bg-zinc-500/20 hover:bg-zinc-500/30 text-zinc-200 border-zinc-200/50 dark:bg-zinc-400/25 dark:hover:bg-zinc-400/35 dark:text-zinc-200";
-  };
-
-  const handleCardSelect = (card: Card) => {
-    setDealerCards((prev) => [...prev, card]);
-    onCardSelect(card);
-    setShowingDownCard(false);
-  };
+  const [cards, setCards] = useState<Card[]>([upCard]);
 
   const calculateTotal = (cards: Card[]): number => {
     let total = 0;
@@ -65,102 +44,93 @@ export default function DealerPlay({
     return total;
   };
 
+  const total = calculateTotal(cards);
+  const mustHit = total < 17;
+
+  const handleCardSelect = (card: Card) => {
+    onCardSelect(card);
+    setCards((prev) => [...prev, card]);
+  };
+
+  const getCardColor = (card: Card) => {
+    if (["2", "3", "4", "5", "6"].includes(card)) {
+      return "bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border-blue-200/50";
+    }
+    if (["10", "J", "Q", "K", "A"].includes(card)) {
+      return "bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-200/50";
+    }
+    return "bg-zinc-500/20 hover:bg-zinc-500/30 text-zinc-200 border-zinc-200/50";
+  };
+
   return (
     <div className="space-y-4">
-      <div className="bg-black/40 -mx-4 -mt-4 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
-        <div className="text-lg font-mono font-semibold text-cyan-300">
-          DEALER PROTOCOL
+      <div className="flex justify-between items-center">
+        <div className="text-lg font-mono text-cyan-300">
+          DEALER TOTAL: {total}
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-mono text-cyan-400">DEALER CARDS</span>
+        {mustHit && (
           <Badge
             variant="outline"
-            className="font-mono text-cyan-300 border-cyan-500/30"
+            className="text-yellow-300 border-yellow-500/30"
           >
-            TOTAL: {calculateTotal(dealerCards)}
+            MUST HIT ON 16
           </Badge>
-        </div>
+        )}
+      </div>
 
-        <div className="flex gap-2 h-16 items-center bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
-          {dealerCards.map((card, i) => (
-            <Badge
-              key={i}
+      <div className="flex gap-2">
+        {cards.map((card, i) => (
+          <Badge
+            key={i}
+            variant="outline"
+            className={cn(
+              "h-10 w-8 flex items-center justify-center text-lg font-mono",
+              getCardColor(card)
+            )}
+          >
+            {card}
+          </Badge>
+        ))}
+      </div>
+
+      {mustHit ? (
+        <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30">
+          {Object.entries(deckState).map(([card, count]) => (
+            <Button
+              key={card}
               variant="outline"
+              onClick={() => handleCardSelect(card as Card)}
+              disabled={count === 0}
               className={cn(
-                "h-10 w-8 flex items-center justify-center text-lg font-medium",
-                getCardColor(card)
+                "h-12 text-lg font-mono relative",
+                "bg-black/40 border-cyan-500/30",
+                "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+                count === 0 && "opacity-50"
               )}
             >
               {card}
-            </Badge>
+              <Badge
+                variant="outline"
+                className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
+              >
+                {count}
+              </Badge>
+            </Button>
           ))}
         </div>
-
-        {showingDownCard ? (
-          <div className="space-y-2">
-            <div className="text-sm font-mono text-cyan-400">
-              SELECT DOWN CARD
-            </div>
-            <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
-              {Object.entries(deckState).map(([card, count]) => (
-                <Button
-                  key={card}
-                  variant="outline"
-                  onClick={() => handleCardSelect(card as Card)}
-                  disabled={count === 0 || card === "?"}
-                  className={cn(
-                    "h-12 text-lg font-medium relative transition-colors",
-                    getCardColor(card as Card),
-                    count === 0 && "opacity-50"
-                  )}
-                >
-                  {card}
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "absolute -top-2 -right-2 h-5 w-5 text-xs",
-                      getCardColor(card as Card)
-                    )}
-                  >
-                    {count}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                onClick={() => onComplete(dealerCards)}
-                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-              >
-                STAND
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowingDownCard(true)}
-                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-                disabled={calculateTotal(dealerCards) >= 17}
-              >
-                HIT
-              </Button>
-            </div>
-            {calculateTotal(dealerCards) >= 17 && (
-              <Button
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-mono shadow-neon"
-                onClick={() => onComplete(dealerCards)}
-              >
-                COMPLETE DEALER TURN
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      ) : (
+        <Button
+          onClick={() => onComplete(cards)}
+          className={cn(
+            "w-full h-12 text-lg font-mono",
+            "bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500",
+            "hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600",
+            "text-white shadow-neon-lg transition-all duration-300"
+          )}
+        >
+          ROUND OVER
+        </Button>
+      )}
     </div>
   );
 }

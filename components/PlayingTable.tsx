@@ -40,12 +40,15 @@ interface PlayingTableProps {
 interface RoundStats {
   dealerTotal: number;
   dealerCards: Card[];
+  dealerHasBlackjack: boolean;
   playerHands: {
     cards: Card[];
     total: number;
     bet: number;
+    payout: number;
     result: "win" | "lose" | "push";
     isYourHand: boolean;
+    isBlackjack: boolean;
   }[];
 }
 
@@ -268,43 +271,65 @@ export default function PlayingTable({
 
   const handleDealerComplete = (finalDealerCards: Card[]) => {
     const dealerTotal = calculateTotal(finalDealerCards);
+    const dealerHasBlackjack =
+      dealerTotal === 21 && finalDealerCards.length === 2;
 
     // Calculate results for all hands
     const handResults = hands.map((hand) => {
       const playerTotal = calculateTotal(hand.cards);
+      const playerHasBlackjack = playerTotal === 21 && hand.cards.length === 2;
       let result: "win" | "lose" | "push" = "push";
+      let payout = hand.bet; // Default payout is 1:1
 
-      // Determine result
-      if (playerTotal > 21) {
+      // Determine result and payout
+      if (playerHasBlackjack) {
+        if (dealerHasBlackjack) {
+          result = "push";
+          payout = hand.bet; // Push on both blackjack
+        } else {
+          result = "win";
+          payout = hand.bet * 2.5; // 3:2 payout for blackjack
+        }
+      } else if (playerTotal > 21) {
         result = "lose";
+        payout = 0;
       } else if (dealerTotal > 21) {
         result = "win";
+        payout = hand.bet * 2; // Regular 1:1 payout
       } else if (playerTotal > dealerTotal) {
         result = "win";
+        payout = hand.bet * 2; // Regular 1:1 payout
       } else if (playerTotal < dealerTotal) {
         result = "lose";
+        payout = 0;
+      } else {
+        result = "push";
+        payout = hand.bet; // Return original bet on push
       }
 
-      // Call onHandComplete for each hand with the correct bet amount
+      // Call onHandComplete for each hand with the correct payout
       onHandComplete({
         ...hand,
         isComplete: true,
-        bet: hand.bet, // Use the original bet amount
+        bet: payout, // Pass the calculated payout
       });
 
       return {
         cards: hand.cards,
         total: playerTotal,
-        bet: hand.bet, // Use the original bet amount, not doubled
+        bet: hand.bet, // Original bet amount for display
+        payout: payout, // Add payout to track actual winnings
         result,
         isYourHand: hand.isYourHand,
+        isBlackjack: playerHasBlackjack,
       };
     });
 
-    // Set round stats
+    // Update round stats with blackjack information
     setRoundStats({
       dealerTotal,
       dealerCards: finalDealerCards,
+      dealerHasBlackjack,
       playerHands: handResults,
     });
 
@@ -313,15 +338,12 @@ export default function PlayingTable({
     handResults.forEach((hand) => {
       newTableStats.totalHands++;
 
-      // Use the original bet amount for statistics
-      const effectiveBet = hand.bet;
-
       if (hand.result === "win") {
         newTableStats.handsWon++;
-        newTableStats.totalBetsWon += effectiveBet; // Use original bet amount
+        newTableStats.totalBetsWon += hand.payout - hand.bet; // Track actual profit
         newTableStats.biggestWin = Math.max(
           newTableStats.biggestWin,
-          effectiveBet
+          hand.payout - hand.bet
         );
         newTableStats.currentStreak++;
         newTableStats.longestWinStreak = Math.max(
@@ -330,10 +352,10 @@ export default function PlayingTable({
         );
       } else if (hand.result === "lose") {
         newTableStats.handsLost++;
-        newTableStats.totalBetsLost += effectiveBet; // Use original bet amount
+        newTableStats.totalBetsLost += hand.bet;
         newTableStats.biggestLoss = Math.max(
           newTableStats.biggestLoss,
-          effectiveBet
+          hand.bet
         );
         newTableStats.currentStreak = Math.min(
           0,
@@ -358,13 +380,11 @@ export default function PlayingTable({
 
     return (
       <div className="space-y-6 text-cyan-100">
-        <div className="bg-black/40 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
-          <div className="text-lg font-mono font-semibold text-cyan-300">
-            ROUND COMPLETE
-          </div>
+        <div className="text-lg font-mono font-semibold text-cyan-300">
+          ROUND COMPLETE
         </div>
 
-        <div className="space-y-6 p-4">
+        <div className="space-y-6">
           {/* Dealer's Final Hand */}
           <div className="space-y-2">
             <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
@@ -375,6 +395,14 @@ export default function PlayingTable({
                 <span className="font-mono text-cyan-300">
                   TOTAL: {roundStats.dealerTotal}
                 </span>
+                {roundStats.dealerHasBlackjack && (
+                  <Badge
+                    variant="default"
+                    className="bg-yellow-500/20 text-yellow-300"
+                  >
+                    BLACKJACK
+                  </Badge>
+                )}
               </div>
               <div className="flex gap-2">
                 {roundStats.dealerCards.map((card, i) => (
@@ -448,9 +476,22 @@ export default function PlayingTable({
                   <div className="flex justify-between text-sm">
                     <span className="font-mono text-cyan-300">
                       TOTAL: {hand.total}
+                      {hand.isBlackjack && (
+                        <Badge
+                          variant="default"
+                          className="ml-2 bg-yellow-500/20 text-yellow-300"
+                        >
+                          BLACKJACK
+                        </Badge>
+                      )}
                     </span>
                     <span className="font-mono text-cyan-300">
                       BET: ${hand.bet}
+                      {hand.payout > hand.bet && (
+                        <span className="text-green-400 ml-2">
+                          (WIN: ${hand.payout - hand.bet})
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -590,15 +631,13 @@ export default function PlayingTable({
   };
 
   return (
-    <div className="space-y-6 text-cyan-100">
+    <div className="space-y-6 text-cyan-100 p-4">
       {isRoundComplete ? (
         renderRoundSummary()
       ) : (
         <>
-          <div className="bg-black/40 -mx-4 -mt-4 px-4 py-3 border-b border-cyan-500/30 shadow-neon">
-            <div className="text-lg font-mono font-semibold text-cyan-300">
-              PLAYING HAND {activeHandIndex + 1}/{hands.length}
-            </div>
+          <div className="text-lg font-mono font-semibold text-cyan-300">
+            PLAYING HAND {activeHandIndex + 1}/{hands.length}
           </div>
 
           <div className="space-y-4">

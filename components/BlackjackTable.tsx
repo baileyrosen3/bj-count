@@ -287,10 +287,8 @@ export default function BlackjackTable({
 
   return (
     <div className="space-y-6 text-cyan-100 p-4">
-      <div className="bg-black/40 border-b p-4 border-cyan-500/30 shadow-neon">
-        <div className="text-lg font-mono font-semibold text-cyan-300">
-          INITIALIZE GAME
-        </div>
+      <div className="text-lg font-mono font-semibold text-cyan-300">
+        INITIALIZE GAME
       </div>
 
       <div className="space-y-4">
