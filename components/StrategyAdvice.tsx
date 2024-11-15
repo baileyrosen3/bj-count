@@ -1,3 +1,5 @@
+"use client";
+
 import { Card } from "../lib/types";
 import { Badge } from "../components/ui/badge";
 import {

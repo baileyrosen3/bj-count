@@ -4,7 +4,6 @@ import {
   COUNTING_SYSTEMS,
   CountingSystem,
   Card,
-  CardValueMap,
 } from "./types";
 
 // Add a variable to hold the current counting system
