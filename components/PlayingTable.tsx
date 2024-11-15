@@ -67,11 +67,16 @@ interface TableStats {
   longestLoseStreak: number;
 }
 
-// Add this helper function near the top of the file
+// Update the calculateDealerWinProbability function to handle dual totals
 const calculateDealerWinProbability = (
   dealerUpCard: Card,
-  playerTotal: number
+  playerTotal: number | [number, number]
 ): number => {
+  // Get the best valid total for player
+  const bestPlayerTotal = Array.isArray(playerTotal)
+    ? Math.min(...playerTotal.filter((t) => t <= 21))
+    : playerTotal;
+
   // Basic probability calculation
   const dealerValue = ["10", "J", "Q", "K"].includes(dealerUpCard)
     ? 10
@@ -80,7 +85,7 @@ const calculateDealerWinProbability = (
     : parseInt(dealerUpCard);
 
   // If player has busted, dealer wins 100%
-  if (playerTotal > 21) return 100;
+  if (bestPlayerTotal > 21) return 100;
 
   // If dealer has blackjack potential (A showing)
   if (dealerUpCard === "A") return 35;
@@ -89,7 +94,7 @@ const calculateDealerWinProbability = (
   if (dealerValue === 10) return 30;
 
   // For other dealer upcards, rough probability based on card value
-  return Math.max(0, Math.min(100, (dealerValue / playerTotal) * 25));
+  return Math.max(0, Math.min(100, (dealerValue / bestPlayerTotal) * 25));
 };
 
 export default function PlayingTable({
@@ -257,7 +262,11 @@ export default function PlayingTable({
     const updatedCards = [...currentHand.cards, card];
     const total = calculateTotal(updatedCards);
 
-    if (total > 21 || currentHand.isDoubled) {
+    if (
+      Array.isArray(total)
+        ? Math.max(...total) > 21
+        : total > 21 || currentHand.isDoubled
+    ) {
       setHands((prev) =>
         prev.map((hand, idx) =>
           idx === activeHandIndex ? { ...hand, isComplete: true } : hand
@@ -271,7 +280,10 @@ export default function PlayingTable({
     setIsSelectingCard(false);
   };
 
-  const calculateTotal = (cards: Card[]): number => {
+  const calculateTotal = (
+    cards: Card[],
+    isDealer: boolean = false
+  ): number | [number, number] => {
     let total = 0;
     let aces = 0;
 
@@ -286,6 +298,31 @@ export default function PlayingTable({
       }
     });
 
+    // For hands with aces
+    if (aces > 0) {
+      const softTotal = total;
+      const hardTotal = total - 10 * aces;
+
+      // For dealer, show both totals if under 17 exists
+      if (isDealer) {
+        if (hardTotal < 17 || (softTotal <= 21 && softTotal < 17)) {
+          // Only show valid totals (under 21)
+          if (softTotal > 21) return hardTotal;
+          if (hardTotal < 17 && softTotal < 17) return [hardTotal, softTotal];
+          // If one total is >= 17 and valid, show both
+          if (hardTotal >= 17 && softTotal <= 21) return [hardTotal, softTotal];
+          if (softTotal >= 17 && hardTotal < softTotal)
+            return [hardTotal, softTotal];
+        }
+      } else {
+        // For player hands, show both totals if they're different and valid
+        if (hardTotal !== softTotal && softTotal <= 21) {
+          return [hardTotal, softTotal];
+        }
+      }
+    }
+
+    // Adjust for busting
     while (total > 21 && aces > 0) {
       total -= 10;
       aces -= 1;
@@ -294,42 +331,56 @@ export default function PlayingTable({
     return total;
   };
 
+  const renderTotal = (total: number | [number, number]) => {
+    if (Array.isArray(total)) {
+      return `${total[0]}/${total[1]}`;
+    }
+    return total;
+  };
+
   const handleDealerComplete = (finalDealerCards: Card[]) => {
-    const dealerTotal = calculateTotal(finalDealerCards);
+    const dealerTotal = calculateTotal(finalDealerCards, true);
+    const finalDealerTotal = Array.isArray(dealerTotal)
+      ? Math.max(...dealerTotal.filter((t) => t <= 21))
+      : dealerTotal;
     const dealerHasBlackjack =
-      dealerTotal === 21 && finalDealerCards.length === 2;
+      finalDealerTotal === 21 && finalDealerCards.length === 2;
 
     // Calculate results for all hands
     const handResults = hands.map((hand) => {
       const playerTotal = calculateTotal(hand.cards);
-      const playerHasBlackjack = playerTotal === 21 && hand.cards.length === 2;
+      const finalPlayerTotal = Array.isArray(playerTotal)
+        ? Math.max(...playerTotal.filter((t) => t <= 21))
+        : playerTotal;
+      const playerHasBlackjack =
+        finalPlayerTotal === 21 && hand.cards.length === 2;
       let result: "win" | "lose" | "push" = "push";
-      let payout = hand.bet; // Default payout is 1:1
+      let payout = hand.bet;
 
-      // Determine result and payout
+      // Determine result and payout using finalDealerTotal and finalPlayerTotal
       if (playerHasBlackjack) {
         if (dealerHasBlackjack) {
           result = "push";
-          payout = hand.bet; // Push on both blackjack
+          payout = hand.bet;
         } else {
           result = "win";
-          payout = hand.bet * 2.5; // 3:2 payout for blackjack
+          payout = hand.bet * 2.5;
         }
-      } else if (playerTotal > 21) {
+      } else if (finalPlayerTotal > 21) {
         result = "lose";
         payout = 0;
-      } else if (dealerTotal > 21) {
+      } else if (finalDealerTotal > 21) {
         result = "win";
-        payout = hand.bet * 2; // Regular 1:1 payout
-      } else if (playerTotal > dealerTotal) {
+        payout = hand.bet * 2;
+      } else if (finalPlayerTotal > finalDealerTotal) {
         result = "win";
-        payout = hand.bet * 2; // Regular 1:1 payout
-      } else if (playerTotal < dealerTotal) {
+        payout = hand.bet * 2;
+      } else if (finalPlayerTotal < finalDealerTotal) {
         result = "lose";
         payout = 0;
       } else {
         result = "push";
-        payout = hand.bet; // Return original bet on push
+        payout = hand.bet;
       }
 
       // Call onHandComplete for each hand with the correct payout
@@ -341,7 +392,7 @@ export default function PlayingTable({
 
       return {
         cards: hand.cards,
-        total: playerTotal,
+        total: finalPlayerTotal,
         bet: hand.bet, // Original bet amount for display
         payout: payout, // Add payout to track actual winnings
         result,
@@ -352,7 +403,7 @@ export default function PlayingTable({
 
     // Update round stats with blackjack information
     setRoundStats({
-      dealerTotal,
+      dealerTotal: finalDealerTotal,
       dealerCards: finalDealerCards,
       dealerHasBlackjack,
       playerHands: handResults,
@@ -365,10 +416,11 @@ export default function PlayingTable({
 
       if (hand.result === "win") {
         newTableStats.handsWon++;
-        newTableStats.totalBetsWon += hand.payout - hand.bet; // Track actual profit
+        const winAmount = hand.payout - hand.bet; // Calculate actual profit
+        newTableStats.totalBetsWon += winAmount;
         newTableStats.biggestWin = Math.max(
           newTableStats.biggestWin,
-          hand.payout - hand.bet
+          winAmount
         );
         newTableStats.currentStreak++;
         newTableStats.longestWinStreak = Math.max(
@@ -377,10 +429,11 @@ export default function PlayingTable({
         );
       } else if (hand.result === "lose") {
         newTableStats.handsLost++;
-        newTableStats.totalBetsLost += hand.bet;
+        const lossAmount = hand.bet; // Original bet amount is the loss
+        newTableStats.totalBetsLost += lossAmount;
         newTableStats.biggestLoss = Math.max(
           newTableStats.biggestLoss,
-          hand.bet
+          lossAmount
         );
         newTableStats.currentStreak = Math.min(
           0,
@@ -504,7 +557,7 @@ export default function PlayingTable({
                         variant="outline"
                         className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
                       >
-                        {calculateTotal(hand.cards)}
+                        {renderTotal(calculateTotal(hand.cards))}
                       </Badge>
                     )}
                   </div>
@@ -714,7 +767,7 @@ export default function PlayingTable({
                     variant="outline"
                     className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
                   >
-                    {calculateTotal(dealerHand.cards)}
+                    {renderTotal(calculateTotal(dealerHand.cards, true))}
                   </Badge>
                 )}
               </div>
@@ -794,7 +847,7 @@ export default function PlayingTable({
                             variant="outline"
                             className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
                           >
-                            {calculateTotal(hand.cards)}
+                            {renderTotal(calculateTotal(hand.cards))}
                           </Badge>
                         )}
                       </div>

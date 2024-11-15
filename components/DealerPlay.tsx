@@ -21,7 +21,7 @@ export default function DealerPlay({
 }: DealerPlayProps) {
   const [cards, setCards] = useState<Card[]>([upCard]);
 
-  const calculateTotal = (cards: Card[]): number => {
+  const calculateTotal = (cards: Card[]): number | [number, number] => {
     let total = 0;
     let aces = 0;
 
@@ -36,6 +36,24 @@ export default function DealerPlay({
       }
     });
 
+    // For hands with aces
+    if (aces > 0) {
+      const softTotal = total;
+      const hardTotal = total - 10 * aces;
+
+      // For dealer, show both totals if under 17 exists
+      if (hardTotal < 17 || (softTotal <= 21 && softTotal < 17)) {
+        // Only show valid totals (under 21)
+        if (softTotal > 21) return hardTotal;
+        if (hardTotal < 17 && softTotal < 17) return [hardTotal, softTotal];
+        // If one total is >= 17 and valid, show both
+        if (hardTotal >= 17 && softTotal <= 21) return [hardTotal, softTotal];
+        if (softTotal >= 17 && hardTotal < softTotal)
+          return [hardTotal, softTotal];
+      }
+    }
+
+    // Adjust for busting
     while (total > 21 && aces > 0) {
       total -= 10;
       aces -= 1;
@@ -44,8 +62,17 @@ export default function DealerPlay({
     return total;
   };
 
+  const renderTotal = (total: number | [number, number]) => {
+    if (Array.isArray(total)) {
+      return `${total[0]}/${total[1]}`;
+    }
+    return total;
+  };
+
   const total = calculateTotal(cards);
-  const mustHit = total < 17;
+  const mustHit = Array.isArray(total)
+    ? total[0] < 17 || total[1] < 17
+    : total < 17;
 
   const handleCardSelect = (card: Card) => {
     onCardSelect(card);
@@ -67,7 +94,7 @@ export default function DealerPlay({
       <div className="p-3 rounded-lg border border-cyan-500 bg-black/60 shadow-neon backdrop-blur-sm">
         <div className="flex justify-between items-center mb-2">
           <div className="text-sm font-mono text-cyan-300 bg-cyan-500/5 px-2 rounded-md border border-cyan-500/20">
-            {total}
+            {renderTotal(total)}
           </div>
           {mustHit && (
             <Badge
