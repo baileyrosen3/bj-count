@@ -432,7 +432,7 @@ export default function PlayingTable({
                   key={index}
                   className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 backdrop-blur-sm"
                 >
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-cyan-300">
                         HAND {index + 1}
@@ -459,19 +459,29 @@ export default function PlayingTable({
                       {hand.result.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="flex gap-2 mb-2">
-                    {hand.cards.map((card, i) => (
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      {hand.cards.map((card, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className={cn(
+                            "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                            getCardColor(card)
+                          )}
+                        >
+                          {card}
+                        </Badge>
+                      ))}
+                    </div>
+                    {hand.cards.length > 0 && (
                       <Badge
-                        key={i}
                         variant="outline"
-                        className={cn(
-                          "h-10 w-8 flex items-center justify-center text-lg font-mono",
-                          getCardColor(card)
-                        )}
+                        className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
                       >
-                        {card}
+                        {calculateTotal(hand.cards)}
                       </Badge>
-                    ))}
+                    )}
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="font-mono text-cyan-300">
@@ -637,7 +647,9 @@ export default function PlayingTable({
       ) : (
         <>
           <div className="text-lg font-mono font-semibold text-cyan-300">
-            PLAYING HAND {activeHandIndex + 1}/{hands.length}
+            {showDealerPlay
+              ? "DEALER'S TURN"
+              : `PLAYING HAND ${activeHandIndex + 1}/${hands.length}`}
           </div>
 
           <div className="space-y-4">
@@ -646,19 +658,29 @@ export default function PlayingTable({
               <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
                 Dealer Protocol
               </label>
-              <div className="flex gap-2 h-16 items-center bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
-                {dealerHand.cards.map((card, i) => (
+              <div className="flex justify-between items-center h-16 bg-black/50 rounded-lg px-3 border border-cyan-500/30 backdrop-blur-sm">
+                <div className="flex gap-2">
+                  {dealerHand.cards.map((card, i) => (
+                    <Badge
+                      key={i}
+                      variant="outline"
+                      className={cn(
+                        "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                        getCardColor(card)
+                      )}
+                    >
+                      {card}
+                    </Badge>
+                  ))}
+                </div>
+                {dealerHand.cards.length > 0 && (
                   <Badge
-                    key={i}
                     variant="outline"
-                    className={cn(
-                      "h-10 w-8 flex items-center justify-center text-lg font-mono",
-                      getCardColor(card)
-                    )}
+                    className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
                   >
-                    {card}
+                    {calculateTotal(dealerHand.cards)}
                   </Badge>
-                ))}
+                )}
               </div>
             </div>
 
@@ -666,149 +688,162 @@ export default function PlayingTable({
             {!showDealerPlay && (
               <div className="space-y-3">
                 {hands.map((hand, index) => (
-                  <div
-                    key={hand.id}
-                    className={cn(
-                      "space-y-2 p-3 rounded-lg border backdrop-blur-sm",
-                      index === activeHandIndex
-                        ? "border-cyan-500 bg-black/60 shadow-neon"
-                        : "border-cyan-500/30 bg-black/40",
-                      hand.isComplete && "opacity-60"
-                    )}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono text-cyan-300">
-                          HAND {index + 1}
-                        </span>
-                        {hand.isYourHand && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs border-cyan-500/30 font-mono"
-                          >
-                            YOU
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className="font-mono text-cyan-300 border-cyan-500/30"
-                        >
-                          BET: ${hand.bet}
-                        </Badge>
-                        {hand.isDoubled && (
-                          <Badge
-                            variant="outline"
-                            className="font-mono text-purple-300 border-purple-500/30"
-                          >
-                            DOUBLED
-                          </Badge>
-                        )}
-                        {hand.isSplit && (
-                          <Badge
-                            variant="outline"
-                            className="font-mono text-blue-300 border-blue-500/30"
-                          >
-                            SPLIT
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {hand.cards.map((card, i) => (
-                        <Badge
-                          key={i}
-                          variant="outline"
-                          className={cn(
-                            "h-10 w-8 flex items-center justify-center text-lg font-mono",
-                            getCardColor(card)
+                  <div key={hand.id} className="space-y-2">
+                    <div
+                      className={cn(
+                        "p-3 rounded-lg border backdrop-blur-sm",
+                        index === activeHandIndex
+                          ? "border-cyan-500 bg-black/60 shadow-neon"
+                          : "border-cyan-500/30 bg-black/40",
+                        hand.isComplete && "opacity-60"
+                      )}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-cyan-300">
+                            HAND {index + 1}
+                          </span>
+                          {hand.isYourHand && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-cyan-500/30 font-mono"
+                            >
+                              YOU
+                            </Badge>
                           )}
-                        >
-                          {card}
-                        </Badge>
-                      ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-cyan-300 border-cyan-500/30"
+                          >
+                            BET: ${hand.bet}
+                          </Badge>
+                          {hand.isDoubled && (
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-purple-300 border-purple-500/30"
+                            >
+                              DOUBLED
+                            </Badge>
+                          )}
+                          {hand.isSplit && (
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-blue-300 border-blue-500/30"
+                            >
+                              SPLIT
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center py-2">
+                        <div className="flex gap-2">
+                          {hand.cards.map((card, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className={cn(
+                                "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                                getCardColor(card)
+                              )}
+                            >
+                              {card}
+                            </Badge>
+                          ))}
+                        </div>
+                        {hand.cards.length > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="h-10 px-3 flex items-center justify-center text-lg font-mono bg-cyan-500/10 border-cyan-500/30 ml-2"
+                          >
+                            {calculateTotal(hand.cards)}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {index === activeHandIndex &&
+                        !hand.isComplete &&
+                        showActions && (
+                          <>
+                            <StrategyAdvice
+                              dealerUpCard={dealerHand.cards[0]}
+                              playerCards={hand.cards}
+                              deckState={deckState}
+                              runningCount={runningCount}
+                              countingSystem={countingSystem}
+                            />
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleAction("stand")}
+                                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                              >
+                                STAND
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => handleAction("hit")}
+                                className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                              >
+                                HIT
+                              </Button>
+                              {hand.cards.length === 2 && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleAction("double")}
+                                    disabled={hand.isDoubled || hand.isSplit}
+                                    className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                                  >
+                                    DOUBLE
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleAction("split")}
+                                    disabled={!canSplit(hand)}
+                                    className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                                  >
+                                    SPLIT
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
                     </div>
 
+                    {/* Card Selection Grid - Show directly under active hand */}
                     {index === activeHandIndex &&
                       !hand.isComplete &&
-                      showActions && (
-                        <>
-                          <StrategyAdvice
-                            dealerUpCard={dealerHand.cards[0]}
-                            playerCards={hand.cards}
-                            deckState={deckState}
-                            runningCount={runningCount}
-                            countingSystem={countingSystem}
-                          />
-                          <div className="grid grid-cols-2 gap-2 mt-2">
+                      isSelectingCard && (
+                        <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30">
+                          {Object.entries(deckState).map(([card, count]) => (
                             <Button
+                              key={card}
                               variant="outline"
-                              onClick={() => handleAction("stand")}
-                              className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
+                              onClick={() => handleCardSelect(card as Card)}
+                              disabled={count === 0}
+                              className={cn(
+                                "h-12 text-lg font-mono relative",
+                                "bg-black/40 border-cyan-500/30",
+                                "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+                                count === 0 && "opacity-50"
+                              )}
                             >
-                              STAND
+                              {card}
+                              <Badge
+                                variant="outline"
+                                className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
+                              >
+                                {count}
+                              </Badge>
                             </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleAction("hit")}
-                              className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-                            >
-                              HIT
-                            </Button>
-                            {hand.cards.length === 2 && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleAction("double")}
-                                  disabled={hand.isDoubled || hand.isSplit}
-                                  className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-                                >
-                                  DOUBLE
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleAction("split")}
-                                  disabled={!canSplit(hand)}
-                                  className="font-mono text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/20"
-                                >
-                                  SPLIT
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </>
+                          ))}
+                        </div>
                       )}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Card Selection Grid */}
-            {isSelectingCard && (
-              <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
-                {Object.entries(deckState).map(([card, count]) => (
-                  <Button
-                    key={card}
-                    variant="outline"
-                    onClick={() => handleCardSelect(card as Card)}
-                    disabled={count === 0}
-                    className={cn(
-                      "h-12 text-lg font-mono relative transition-colors",
-                      "bg-black/40 border-cyan-500/30",
-                      "hover:bg-cyan-500/20 hover:border-cyan-500/50",
-                      count === 0 && "opacity-50"
-                    )}
-                  >
-                    {card}
-                    <Badge
-                      variant="outline"
-                      className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
-                    >
-                      {count}
-                    </Badge>
-                  </Button>
                 ))}
               </div>
             )}

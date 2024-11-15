@@ -120,6 +120,8 @@ export default function BlackjackTable({
           `Adding dealer card ${card} with value ${cardValue} to count`
         );
         onRunningCountChange(runningCount + cardValue);
+        // Automatically move to first player hand after dealer cards are set
+        setActiveHandIndex(0);
       }
     } else {
       // Player hand
@@ -140,6 +142,20 @@ export default function BlackjackTable({
           `Adding player card ${card} with value ${cardValue} to count`
         );
         onRunningCountChange(runningCount + cardValue);
+
+        // If this was the second card, move to next hand
+        if (hand.cards.length === 1) {
+          // Find next hand that needs cards
+          const nextHandIndex = hands.findIndex(
+            (h, idx) => idx > activeHandIndex && h.cards.length < 2
+          );
+          if (nextHandIndex !== -1) {
+            setActiveHandIndex(nextHandIndex);
+          } else if (!dealerHand.cards.length) {
+            // If no more player hands need cards, move to dealer if dealer hasn't been dealt
+            setActiveHandIndex(-1);
+          }
+        }
       }
     }
     // Hide card selection after adding a card
@@ -469,80 +485,8 @@ export default function BlackjackTable({
               </Button>
             )}
           </div>
-        </div>
-
-        {/* Player hands section */}
-        <div className="space-y-2">
-          <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
-            Player Hands
-          </label>
-          <div className="space-y-3">
-            {hands.map((hand, index) => (
-              <div
-                key={hand.id}
-                className={cn(
-                  "space-y-2 p-3 rounded-lg border backdrop-blur-sm cursor-pointer",
-                  "bg-black/50 hover:bg-black/60 transition-colors",
-                  activeHandIndex === hand.id
-                    ? "border-cyan-500 shadow-neon"
-                    : "border-cyan-500/30 hover:border-cyan-500/50"
-                )}
-                onClick={() => setActiveHandIndex(hand.id)}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-cyan-300">
-                      HAND {index + 1}
-                    </span>
-                    {hand.isYourHand && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs border-cyan-500/30 font-mono bg-cyan-500/10"
-                      >
-                        YOU
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  {hand.cards.map((card, i) => (
-                    <div
-                      key={`hand-${hand.id}-card-${i}`}
-                      className="relative group"
-                    >
-                      {renderCard(card, false, hand.id, i)}
-                    </div>
-                  ))}
-                  {hand.cards.length < 2 && (
-                    <Button
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveHandIndex(hand.id);
-                      }}
-                      className={cn(
-                        "hover:bg-cyan-500/20 text-cyan-300 font-mono border border-transparent",
-                        activeHandIndex === hand.id && "border-cyan-500/50"
-                      )}
-                    >
-                      + ADD CARD
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Card selection grid - Only show when dealer or player hand is selected */}
-        {activeHandIndex !== null && (
-          <div className="space-y-2">
-            <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
-              {activeHandIndex === -1
-                ? "SELECT DEALER CARD"
-                : "SELECT PLAYER CARD"}
-            </label>
+          {/* Card selection for dealer */}
+          {activeHandIndex === -1 && (
             <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
               {Object.entries(deckState).map(([card, count]) => (
                 <Button
@@ -567,8 +511,100 @@ export default function BlackjackTable({
                 </Button>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Player hands section */}
+        <div className="space-y-2">
+          <label className="text-sm font-mono text-cyan-400 uppercase tracking-wide">
+            Player Hands
+          </label>
+          <div className="space-y-3">
+            {hands.map((hand, index) => (
+              <div key={hand.id}>
+                <div
+                  className={cn(
+                    "space-y-2 p-3 rounded-lg border backdrop-blur-sm cursor-pointer",
+                    "bg-black/50 hover:bg-black/60 transition-colors",
+                    activeHandIndex === hand.id
+                      ? "border-cyan-500 shadow-neon"
+                      : "border-cyan-500/30 hover:border-cyan-500/50"
+                  )}
+                  onClick={() => setActiveHandIndex(hand.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-cyan-300">
+                        HAND {index + 1}
+                      </span>
+                      {hand.isYourHand && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs border-cyan-500/30 font-mono bg-cyan-500/10"
+                        >
+                          YOU
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {hand.cards.map((card, i) => (
+                      <div
+                        key={`hand-${hand.id}-card-${i}`}
+                        className="relative group"
+                      >
+                        {renderCard(card, false, hand.id, i)}
+                      </div>
+                    ))}
+                    {hand.cards.length < 2 && (
+                      <Button
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveHandIndex(hand.id);
+                        }}
+                        className={cn(
+                          "hover:bg-cyan-500/20 text-cyan-300 font-mono border border-transparent",
+                          activeHandIndex === hand.id && "border-cyan-500/50"
+                        )}
+                      >
+                        + ADD CARD
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {/* Card selection for this hand */}
+                {activeHandIndex === hand.id && (
+                  <div className="grid grid-cols-5 gap-1.5 p-4 bg-black/40 rounded-lg border border-cyan-500/30 shadow-neon">
+                    {Object.entries(deckState).map(([card, count]) => (
+                      <Button
+                        key={card}
+                        variant="outline"
+                        onClick={() => handleCardSelect(card as Card)}
+                        disabled={count === 0}
+                        className={cn(
+                          "h-12 text-lg font-mono relative transition-colors",
+                          "bg-black/40 border-cyan-500/30",
+                          "hover:bg-cyan-500/20 hover:border-cyan-500/50",
+                          count === 0 && "opacity-50"
+                        )}
+                      >
+                        {card}
+                        <Badge
+                          variant="outline"
+                          className="absolute -top-2 -right-2 h-5 w-5 text-xs border-cyan-500/30"
+                        >
+                          {count}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Move the complete setup button and requirements outside the card selection condition */}
         <Button

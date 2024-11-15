@@ -64,33 +64,35 @@ export default function DealerPlay({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="text-lg font-mono text-cyan-300">
-          DEALER TOTAL: {total}
+      <div className="p-3 rounded-lg border border-cyan-500 bg-black/60 shadow-neon backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-sm font-mono text-cyan-300 bg-cyan-500/5 px-2 rounded-md border border-cyan-500/20">
+            {total}
+          </div>
+          {mustHit && (
+            <Badge
+              variant="outline"
+              className="text-yellow-300 border-yellow-500/30"
+            >
+              MUST HIT ON 16
+            </Badge>
+          )}
         </div>
-        {mustHit && (
-          <Badge
-            variant="outline"
-            className="text-yellow-300 border-yellow-500/30"
-          >
-            MUST HIT ON 16
-          </Badge>
-        )}
-      </div>
 
-      <div className="flex gap-2">
-        {cards.map((card, i) => (
-          <Badge
-            key={i}
-            variant="outline"
-            className={cn(
-              "h-10 w-8 flex items-center justify-center text-lg font-mono",
-              getCardColor(card)
-            )}
-          >
-            {card}
-          </Badge>
-        ))}
+        <div className="flex gap-2">
+          {cards.map((card, i) => (
+            <Badge
+              key={i}
+              variant="outline"
+              className={cn(
+                "h-10 w-8 flex items-center justify-center text-lg font-mono",
+                getCardColor(card)
+              )}
+            >
+              {card}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {mustHit ? (
